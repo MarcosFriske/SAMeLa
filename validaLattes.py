@@ -11,6 +11,9 @@ xml_filename = "lattesFrozza.xml"
 
 root = ET_lxml.parse(xml_filename).getroot()
 
+for child in root:
+    print(child.tag)
+
 print(root.tag)
 print(len(root))
 
