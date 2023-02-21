@@ -7,7 +7,7 @@ Created on Sat Dec 17 17:06:02 2022
 
 from lxml import etree as ET_lxml
 
-xml_filename = "lattesFrozza.xml"
+xml_filename = r"XML/lattesFrozza.xml"
 
 root = ET_lxml.parse(xml_filename).getroot()
 
@@ -16,6 +16,10 @@ for child in root:
 
 print(root.tag)
 print(len(root))
+
+# Imprimir o conteúdo em string do item da tag XML
+for i, item in enumerate(root.findall("DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/ESPECIALIZACAO")):
+    print("{}: {}".format(i, ET_lxml.tostring(item)))
 
 dados_gerais = root[0]
 print(dados_gerais.tag)
