@@ -4,7 +4,7 @@ Created on Sat Jan 28 20:37:43 2023
 
 @author: Marcos
 """
-
+import sys
 import psycopg2
 import bcrypt
 from lxml import etree as ET_lxml
@@ -183,9 +183,9 @@ def menu():
     while running:
         print("1 - Inserir dados na tabela Servidores")
         print("2 - Inserir dados na tabela Instrumentos Avaliacao")
-        print("3 - Inserir dados na tabela Eventos")
-        print("4 - Inserir dados na tabela Criterios")
-        print("5 - Inserir dados na tabela Avaliacao")
+        print("3 - Inserir dados na tabela Eventos (precisa de código de instrumento de avaliacao)")
+        print("4 - Inserir dados na tabela Criterios (precisa de código de instrumento de avaliacao)")
+        print("5 - Inserir dados na tabela Avaliacao (precisa código servidor e código evento)")
         print("6 - Inserir dados na tabela Qualis")
         print("7 - Encerrar programa")
         opcao = int(input("Selecione uma opção: "))
@@ -225,15 +225,34 @@ def menu():
             ativo = True
             inserir_dados_instrumentos_avaliacao(nome, descricao, data_criacao, ativo)
         elif opcao == "3":
+            identificacao = input("Informe a identificacao do Evento: ")
+            tipo_evento = input("Informe o tipo do Evento: (congresso, seminario, palestra, outros)").lower()
+            data_inicio = input("Informe a data de inicio do evento (dd/mm/aaaa): ")
+            data_fim = input("Informe a data de fim do evento (dd/mm/aaaa): ")
+            localizacao = input("Informe o local do evento: ")
+            descricao = input("De uma breve descricao do evento: ")
+            fk_id_instrumento_avaliacao = input("Informe o código do instrumento de avaliacao associado a esse evento: ")
             inserir_evento(identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, fk_id_instrumento_avaliacao)
         elif opcao == "4":
+            qtd_maxima_itens = input("Informe a quantidade máxima de itens do critério: ")
+            pontuacao_item = input("Informe a pontuacao por item do critério: ")
+            criterio = input("Informe qual o nome do critério: ")
+            xpath_criterio_lattes = input("Informe o caminho XPATH associado ao critério: ")
+            considera_qualis = input("Informe se o critério considera o Qualis: (true/false) ").lower()
+            fk_id_instrumento_avaliacao = input("Informe o código do instrumento de avaliacao associado a esse critério: ")
             inserir_dados_criterios(qtd_maxima_itens, pontuacao_item, criterio, xpath_criterio_lattes, considera_qualis, fk_id_instrumento_avaliacao)
         elif opcao == "5":
+            organizacao = input("Informe o nome da organizacao que realizou a avaliacao: ")
+            pontuacao = input("Informe a pontuacao atingida na avaliacao: ")
+            fk_id_servidor = input("Informe a qual código de servidor se refere a avaliacao: ")
+            fk_id_evento = input("Informe a qual código de evento se refere a avaliacao: ")
             inserir_dados_avaliacao(organizacao, pontuacao, fk_id_servidor, fk_id_evento)
         elif opcao == "6":
-            inserir_dados_qualis(extrato_capes, sigla, area_de_avaliacao, titulo, url, localidade, issn_isbn, ano_avaliacao, tipo_qualis)
+            # inserir_dados_qualis(extrato_capes, sigla, area_de_avaliacao, titulo, url, localidade, issn_isbn, ano_avaliacao, tipo_qualis)
+            print("Não implementado ainda")
         elif opcao == "7":
-            pass
+            print("Finalizando programa")
+            sys.exit()
         else:
             print("Opção inválida.")
 
