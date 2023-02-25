@@ -9,6 +9,8 @@ from lxml import etree as ET_lxml
 
 xml_filename = r"XML/lattesFrozza.xml"
 
+xml = ET_lxml.parse(xml_filename)
+
 root = ET_lxml.parse(xml_filename).getroot()
 
 for child in root:
@@ -18,8 +20,83 @@ print(root.tag)
 print(len(root))
 
 # Imprimir o conteúdo em string do item da tag XML
-for i, item in enumerate(root.findall("DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/ESPECIALIZACAO")):
+for i, item in enumerate(xml.findall("//DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/DOUTORADO")):
     print("{}: {}".format(i, ET_lxml.tostring(item)))
+
+# contar as ocorrências de DOUTORADO
+count = root.xpath('count(//DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/DOUTORADO)')
+# imprimir o resultado
+print(count)
+
+# contar as ocorrências de MESTRADO
+count = root.xpath('count(//DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/MESTRADO)')
+# imprimir o resultado
+print(count)
+
+# contar as ocorrências de ESPECIALIZACAO
+count = root.xpath('count(//DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/ESPECIALIZACAO)')
+# imprimir o resultado
+print(count)
+
+# contar as ocorrências de ARTIGO-PUBLICADO dentro de ARTIGOS-PUBLICADOS
+count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO)')
+# imprimir o resultado
+print(count)
+
+# executa o xpath e retorna a contagem de elementos
+count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO"])')
+# exibe a contagem
+print(count)
+
+# Conta o número de ocorrências de trabalhos em eventos com natureza "RESUMO_EXPANDIDO"
+count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO_EXPANDIDO"])')
+print(count)
+
+# XPATH com filtro de ano
+# count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS[DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano]])
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+###################
+
+# 'ANO-DO-ARTIGO': '2000'
+# 'TITULO-DO-ARTIGO': 'A Internet como ferramenta de ensino: um estudo sobre seus recursos e como aplicá-los no Ensino a Distância'
+
+artigos_publicados = root.xpath('//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO')[0]
+
+for sub_elemento in artigos_publicados.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos ARTIGO-PUBLICADO
+artigos = root.findall('.//ARTIGO-PUBLICADO')
+
+# itera sobre cada elemento ARTIGO-PUBLICADO e imprime o conteúdo de DADOS-BASICOS-DO-ARTIGO
+for artigo in artigos:
+    dados_basicos = artigo.find('DADOS-BASICOS-DO-ARTIGO')
+    print(dados_basicos.attrib)
+    
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO/DADOS-BASICOS-DO-ARTIGO[@ANO-DO-ARTIGO >= $min_ano and @ANO-DO-ARTIGO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+##################
 
 dados_gerais = root[0]
 print(dados_gerais.tag)

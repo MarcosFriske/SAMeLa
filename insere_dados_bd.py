@@ -18,7 +18,7 @@ user_db = "postgres"
 password_db = "admin"
 
 ## Configurações do XML
-xml_filename = "lattesFrozza.xml"
+xml_filename = "XML/lattesFrozza.xml"
 xml_file = ET_lxml.parse(xml_filename).getroot()
 xml_string = ET_lxml.tostring(xml_file, encoding='utf-8').decode()
 
@@ -188,7 +188,7 @@ def menu():
         print("5 - Inserir dados na tabela Avaliacao (precisa código servidor e código evento)")
         print("6 - Inserir dados na tabela Qualis")
         print("7 - Encerrar programa")
-        opcao = int(input("Selecione uma opção: "))
+        opcao = input("Selecione uma opção: ")
         if opcao == "1":
             opcao = 0
             running2 = True
@@ -196,7 +196,7 @@ def menu():
                 print("1 - Administrador")
                 print("2 - Docente")
                 print("3 - Desenvolvedor")
-                opcao = int(input("Selecione o tipo de servidor: "))
+                opcao = input("Selecione o tipo de servidor: ")
                 if opcao == "1":
                     tipo_servidor = 'Administrador'
                     running2 = False
@@ -226,7 +226,7 @@ def menu():
             inserir_dados_instrumentos_avaliacao(nome, descricao, data_criacao, ativo)
         elif opcao == "3":
             identificacao = input("Informe a identificacao do Evento: ")
-            tipo_evento = input("Informe o tipo do Evento: (congresso, seminario, palestra, outros)").lower()
+            tipo_evento = input("Informe o tipo do Evento: (congresso, seminario, palestra, outros) \n").lower()
             data_inicio = input("Informe a data de inicio do evento (dd/mm/aaaa): ")
             data_fim = input("Informe a data de fim do evento (dd/mm/aaaa): ")
             localizacao = input("Informe o local do evento: ")
@@ -234,8 +234,8 @@ def menu():
             fk_id_instrumento_avaliacao = input("Informe o código do instrumento de avaliacao associado a esse evento: ")
             inserir_evento(identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, fk_id_instrumento_avaliacao)
         elif opcao == "4":
-            qtd_maxima_itens = input("Informe a quantidade máxima de itens do critério: ")
-            pontuacao_item = input("Informe a pontuacao por item do critério: ")
+            qtd_maxima_itens = int(input("Informe a quantidade máxima de itens do critério: "))
+            pontuacao_item = int(input("Informe a pontuacao por item do critério: "))
             criterio = input("Informe qual o nome do critério: ")
             xpath_criterio_lattes = input("Informe o caminho XPATH associado ao critério: ")
             considera_qualis = input("Informe se o critério considera o Qualis: (true/false) ").lower()
