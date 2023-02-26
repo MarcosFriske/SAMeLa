@@ -38,37 +38,13 @@ count = root.xpath('count(//DADOS-GERAIS/FORMACAO-ACADEMICA-TITULACAO/ESPECIALIZ
 # imprimir o resultado
 print(count)
 
-# contar as ocorrências de ARTIGO-PUBLICADO dentro de ARTIGOS-PUBLICADOS
-count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO)')
-# imprimir o resultado
-print(count)
-
-# executa o xpath e retorna a contagem de elementos
-count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO"])')
-# exibe a contagem
-print(count)
-
-# Conta o número de ocorrências de trabalhos em eventos com natureza "RESUMO_EXPANDIDO"
-count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO_EXPANDIDO"])')
-print(count)
-
-# XPATH com filtro de ano
-# count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS[DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano]])
-
-min_ano = 1900
-max_ano = 2023
-
-xpath = ET_lxml.XPath(
-    'count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano])'
-)
-
-count = xpath(root, min_ano=min_ano, max_ano=max_ano)
-
-print(count)
-
 ###################
 
+# Contar as ocorrencias de artigos
+
 # 'ANO-DO-ARTIGO': '2000'
+
+# Ainda precisa ver uma forma de checar se o título está na qualis
 # 'TITULO-DO-ARTIGO': 'A Internet como ferramenta de ensino: um estudo sobre seus recursos e como aplicá-los no Ensino a Distância'
 
 artigos_publicados = root.xpath('//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO')[0]
@@ -97,6 +73,117 @@ print(count)
 
 
 ##################
+
+# executa o xpath e retorna a contagem de elementos
+count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO"])')
+# exibe a contagem
+print(count)
+
+# Conta o número de ocorrências de trabalhos em eventos com natureza "RESUMO_EXPANDIDO"
+count = root.xpath('count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO_EXPANDIDO"])')
+print(count)
+
+# XPATH com filtro de ano
+# count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS[DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano]])
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="COMPLETO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+# XPATH com filtro de ano RESUMO_EXPANDIDO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO_EXPANDIDO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+# XPATH com filtro de ano RESUMO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO" and @ANO-DO-TRABALHO >= $min_ano and @ANO-DO-TRABALHO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+# XPATH com filtro de ano ORIENTACOES INICIACAO_CIENTIFICA
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="INICIACAO_CIENTIFICA" and @ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+# XPATH com filtro de ano ORIENTACOES INICIACAO_CIENTIFICA
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="INICIACAO_CIENTIFICA" and @ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+#####################################################
+
+# //PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/count(TRABALHO-EM-EVENTOS/DADOS-BASICOS-DO-TRABALHO[@NATUREZA="RESUMO_EXPANDIDO"])
+
+trabalhos_eventos = root.xpath('//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TRABALHO-EM-EVENTOS')[0]
+
+for sub_elemento in trabalhos_eventos.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos ARTIGO-PUBLICADO
+trabalhos_eventos = root.findall('.//TRABALHO-EM-EVENTOS')
+
+# itera sobre cada elemento ARTIGO-PUBLICADO e imprime o conteúdo de DADOS-BASICOS-DO-ARTIGO
+for artigo in trabalhos_eventos:
+    dados_basicos = artigo.find('DADOS-BASICOS-DO-TRABALHO')
+    print(dados_basicos.attrib)
+    
+    
+# //OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/count(OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="INICIACAO_CIENTIFICA"])
+
+orientacoes = root.xpath('//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS')[0]
+
+for sub_elemento in orientacoes.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos ARTIGO-PUBLICADO
+orientacoes = root.findall('.//OUTRAS-ORIENTACOES-CONCLUIDAS')
+
+# itera sobre cada elemento ARTIGO-PUBLICADO e imprime o conteúdo de DADOS-BASICOS-DO-ARTIGO
+for artigo in orientacoes:
+    dados_basicos = artigo.find('DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')
+    print(dados_basicos.attrib)
+
+#####################################################
 
 dados_gerais = root[0]
 print(dados_gerais.tag)
