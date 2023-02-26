@@ -4,7 +4,6 @@ Created on Sat Dec 17 17:06:02 2022
 
 @author: Marcos
 """
-
 from lxml import etree as ET_lxml
 
 xml_filename = r"XML/lattesFrozza.xml"
@@ -137,18 +136,104 @@ count = xpath(root, min_ano=min_ano, max_ano=max_ano)
 
 print(count)
 
-# XPATH com filtro de ano ORIENTACOES INICIACAO_CIENTIFICA
+# XPATH com filtro de ano ORIENTACOES ESTAGIO
 
 min_ano = 1900
 max_ano = 2023
 
 xpath = ET_lxml.XPath(
-    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="INICIACAO_CIENTIFICA" and @ANO >= $min_ano and @ANO <= $max_ano])'
+    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@TIPO="Estágio Curso Técnico" and @ANO >= $min_ano and @ANO <= $max_ano])'
 )
 
 count = xpath(root, min_ano=min_ano, max_ano=max_ano)
 
 print(count)
+
+
+# XPATH com filtro de ano ORIENTACOES TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO" and @ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+# XPATH com filtro de ano ORIENTACOES TESE_DE_DOUTORADO e DISSERTACAO_DE_MESTRADO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO" and @ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+# //DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/count(PARTICIPACAO-EM-BANCA-DE-GRADUACAO)
+
+# XPATH com filtro de ano PARTICIPACAO-EM-BANCA-DE-GRADUACAO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/PARTICIPACAO-EM-BANCA-DE-GRADUACAO/DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-GRADUACAO[@NATUREZA="Graduação" and @ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+# XPATH com filtro de ano PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO/DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO[@ANO >= $min_ano and @ANO <= $max_ano])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+# XPATH com filtro de ano //PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/LIVROS-PUBLICADOS-OU-ORGANIZADOS/LIVRO-PUBLICADO-OU-ORGANIZADO
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/LIVROS-PUBLICADOS-OU-ORGANIZADOS/LIVRO-PUBLICADO-OU-ORGANIZADO[DADOS-BASICOS-DO-LIVRO[@ANO >= $min_ano and @ANO <= $max_ano] and DETALHAMENTO-DO-LIVRO[@ISBN and @ISBN != 0]])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
+
+# XPATH com filtro de ano //PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/CAPITULOS-DE-LIVROS-PUBLICADOS/count(CAPITULO-DE-LIVRO-PUBLICADO)
+
+min_ano = 1900
+max_ano = 2023
+
+xpath = ET_lxml.XPath(
+    'count(//PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/CAPITULOS-DE-LIVROS-PUBLICADOS/CAPITULO-DE-LIVRO-PUBLICADO[DADOS-BASICOS-DO-CAPITULO[@ANO >= $min_ano and @ANO <= $max_ano] and DETALHAMENTO-DO-CAPITULO[@ISBN and @ISBN != 0]])'
+)
+
+count = xpath(root, min_ano=min_ano, max_ano=max_ano)
+
+print(count)
+
 
 #####################################################
 
@@ -159,10 +244,10 @@ trabalhos_eventos = root.xpath('//PRODUCAO-BIBLIOGRAFICA/TRABALHOS-EM-EVENTOS/TR
 for sub_elemento in trabalhos_eventos.getchildren():
     print(sub_elemento.tag)
     
-# encontra todos os elementos ARTIGO-PUBLICADO
+# encontra todos os elementos 
 trabalhos_eventos = root.findall('.//TRABALHO-EM-EVENTOS')
 
-# itera sobre cada elemento ARTIGO-PUBLICADO e imprime o conteúdo de DADOS-BASICOS-DO-ARTIGO
+# itera sobre cada elemento
 for artigo in trabalhos_eventos:
     dados_basicos = artigo.find('DADOS-BASICOS-DO-TRABALHO')
     print(dados_basicos.attrib)
@@ -175,13 +260,97 @@ orientacoes = root.xpath('//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTA
 for sub_elemento in orientacoes.getchildren():
     print(sub_elemento.tag)
     
-# encontra todos os elementos ARTIGO-PUBLICADO
+# encontra todos os elementos
 orientacoes = root.findall('.//OUTRAS-ORIENTACOES-CONCLUIDAS')
 
-# itera sobre cada elemento ARTIGO-PUBLICADO e imprime o conteúdo de DADOS-BASICOS-DO-ARTIGO
+# itera sobre cada elemento
 for artigo in orientacoes:
     dados_basicos = artigo.find('DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')
     print(dados_basicos.attrib)
+    
+    
+# //OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/count(OUTRAS-ORIENTACOES-CONCLUIDAS/DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS[@NATUREZA="ORIENTACAO-DE-OUTRA-NATUREZA"])
+
+estagio = root.xpath('//OUTRA-PRODUCAO/ORIENTACOES-CONCLUIDAS/OUTRAS-ORIENTACOES-CONCLUIDAS')[0]
+
+for sub_elemento in estagio.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos
+estagio = root.findall('.//OUTRAS-ORIENTACOES-CONCLUIDAS')
+
+# itera sobre cada elemento
+for artigo in estagio:
+    dados_basicos = artigo.find('DADOS-BASICOS-DE-OUTRAS-ORIENTACOES-CONCLUIDAS')
+    print(dados_basicos.attrib)
+    
+# //DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/PARTICIPACAO-EM-BANCA-DE-GRADUACAO
+
+banca_grad = root.xpath('//DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/PARTICIPACAO-EM-BANCA-DE-GRADUACAO')[0]
+
+for sub_elemento in banca_grad.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos
+banca_grad = root.findall('.//PARTICIPACAO-EM-BANCA-DE-GRADUACAO')
+
+# itera sobre cada elemento
+for artigo in banca_grad:
+    dados_basicos = artigo.find('DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-GRADUACAO')
+    print(dados_basicos.attrib)
+    
+    
+# //DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/count(PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO)
+
+banca_ape = root.xpath('//DADOS-COMPLEMENTARES/PARTICIPACAO-EM-BANCA-TRABALHOS-CONCLUSAO/PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO')[0]
+
+for sub_elemento in banca_ape.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos
+banca_ape = root.findall('.//PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO')
+
+# itera sobre cada elemento
+for artigo in banca_ape:
+    dados_basicos = artigo.find('DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-APERFEICOAMENTO-ESPECIALIZACAO')
+    print(dados_basicos.attrib)
+    
+    
+# //PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/LIVROS-PUBLICADOS-OU-ORGANIZADOS/count(LIVRO-PUBLICADO-OU-ORGANIZADO[DETALHAMENTO-DO-LIVRO/@ISBN>0])
+
+banca_ape = root.xpath('//PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/LIVROS-PUBLICADOS-OU-ORGANIZADOS/LIVRO-PUBLICADO-OU-ORGANIZADO')[0]
+
+for sub_elemento in banca_ape.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos
+banca_ape = root.findall('.//LIVRO-PUBLICADO-OU-ORGANIZADO')
+
+# itera sobre cada elemento
+for artigo in banca_ape:
+    dados_basicos = artigo.find('DETALHAMENTO-DO-LIVRO')
+    dados_basicos2 = artigo.find('DADOS-BASICOS-DO-LIVRO')
+    print(dados_basicos2.attrib)
+    print(dados_basicos.attrib)
+    
+    
+# //PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/CAPITULOS-DE-LIVROS-PUBLICADOS/count(CAPITULO-DE-LIVRO-PUBLICADO)
+
+banca_ape = root.xpath('//PRODUCAO-BIBLIOGRAFICA/LIVROS-E-CAPITULOS/CAPITULOS-DE-LIVROS-PUBLICADOS/CAPITULO-DE-LIVRO-PUBLICADO')[0]
+
+for sub_elemento in banca_ape.getchildren():
+    print(sub_elemento.tag)
+    
+# encontra todos os elementos
+banca_ape = root.findall('.//CAPITULO-DE-LIVRO-PUBLICADO')
+
+# itera sobre cada elemento
+for artigo in banca_ape:
+    dados_basicos = artigo.find('DETALHAMENTO-DO-CAPITULO')
+    dados_basicos2 = artigo.find('DADOS-BASICOS-DO-CAPITULO')
+    print(dados_basicos.attrib)
+    print(dados_basicos2.attrib)
+
 
 #####################################################
 
