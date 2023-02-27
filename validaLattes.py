@@ -5,6 +5,8 @@ Created on Sat Dec 17 17:06:02 2022
 @author: Marcos
 """
 from lxml import etree as ET_lxml
+import pandas as pd
+from fuzzywuzzy import fuzz
 
 xml_filename = r"XML/lattesFrozza.xml"
 
@@ -70,6 +72,73 @@ count = xpath(root, min_ano=min_ano, max_ano=max_ano)
 
 print(count)
 
+##################
+
+# Testar a checagem do Qualis
+
+# Lendo o arquivo .xlsx e criando o dataframe
+df_qualis = pd.read_excel(r'QUALIS/qualis_2017_2020.xlsx')
+
+min_ano = 1900
+max_ano = 2023
+expressao_xpath = "//PRODUCAO-BIBLIOGRAFICA/ARTIGOS-PUBLICADOS/ARTIGO-PUBLICADO[DADOS-BASICOS-DO-ARTIGO/@ANO-DO-ARTIGO >= $min_ano and DADOS-BASICOS-DO-ARTIGO/@ANO-DO-ARTIGO <= $max_ano]"
+resultados_xpath = root.xpath(expressao_xpath, min_ano=min_ano, max_ano=max_ano)
+
+# Extrair os dados de cada resultado XPath e adicionar em uma lista
+dados = []
+for resultado in resultados_xpath:
+    dados_artigo = {}
+    dados_basicos_artigo = resultado.find("DADOS-BASICOS-DO-ARTIGO")
+    dados_artigo['natureza'] = dados_basicos_artigo.get('NATUREZA')
+    dados_artigo['titulo'] = dados_basicos_artigo.get('TITULO-DO-ARTIGO')
+    dados_artigo['ano'] = dados_basicos_artigo.get('ANO-DO-ARTIGO')
+    dados_artigo['pais_publicacao'] = dados_basicos_artigo.get('PAIS-DE-PUBLICACAO')
+    dados_artigo['idioma'] = dados_basicos_artigo.get('IDIOMA')
+    dados_artigo['meio_divulgacao'] = dados_basicos_artigo.get('MEIO-DE-DIVULGACAO')
+    dados_artigo['home_page'] = dados_basicos_artigo.get('HOME-PAGE-DO-TRABALHO')
+    dados_artigo['flag_relevancia'] = dados_basicos_artigo.get('FLAG-RELEVANCIA')
+    dados_artigo['doi'] = dados_basicos_artigo.get('DOI')
+    dados_artigo['titulo_ingles'] = dados_basicos_artigo.get('TITULO-DO-ARTIGO-INGLES')
+    dados_artigo['flag_divulgacao_cientifica'] = dados_basicos_artigo.get('FLAG-DIVULGACAO-CIENTIFICA')
+    dados.append(dados_artigo)
+
+# Criar um DataFrame do pandas com os dados extraídos
+df_artigos_xml = pd.DataFrame(dados)
+
+# Mostrar o DataFrame
+print(df_artigos_xml)
+
+# Definir a função de similaridade entre strings
+def similaridade(titulo1, titulo2):
+    return fuzz.token_set_ratio(titulo1.lower(), titulo2.lower())
+
+# Definir a similaridade mínima desejada
+min_similaridade = 70
+
+# Criar uma lista vazia para armazenar os resultados da verificação
+existe_titulo_similar = []
+
+# Para cada linha do dataframe 'df_artigos_xml', verificar se o título está presente na coluna 'Título' do dataframe 'df_qualis'
+for idx, row in df_artigos_xml.iterrows():
+    titulo = row['titulo']
+    titulos_qualis = df_qualis['Título'].tolist()
+    for titulo_qualis in titulos_qualis:
+        if similaridade(titulo, titulo_qualis) >= min_similaridade:
+            existe_titulo_similar.append(True)
+            break
+    else:
+        existe_titulo_similar.append(False)
+
+# Adicionar a lista de resultados como uma nova coluna no dataframe 'df_artigos_xml'
+df_artigos_xml['existe_titulo_similar'] = existe_titulo_similar
+
+# Contagem de artigos com e sem qualis
+contagem_artigos_com_qualis = df_artigos_xml['existe_titulo_similar'].value_counts()[True]
+contagem_artigos_sem_qualis = df_artigos_xml['existe_titulo_similar'].value_counts()[False]
+
+# Imprimir os resultados
+print("Quantidade de artigos com similaridade no título em relação ao df_qualis: ", contagem_artigos_com_qualis)
+print("Quantidade de artigos sem similaridade no título em relação ao df_qualis: ", contagem_artigos_sem_qualis)
 
 ##################
 
