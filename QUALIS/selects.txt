@@ -1,0 +1,16 @@
+Consulta para buscar um periódico específico pelo título:
+
+SELECT * FROM qualis WHERE titulo = 'Título do periódico';
+
+Consulta para buscar todos os periódicos cujo título começa com uma determinada letra ou conjunto de letras:
+
+SELECT * FROM qualis WHERE titulo LIKE 'A%';
+
+Consulta para buscar todos os periódicos cujo título contém uma determinada palavra ou conjunto de palavras:
+
+SELECT * FROM qualis WHERE titulo LIKE '%palavra%';
+
+Consulta para buscar todos os periódicos cujo título começa com uma letra específica e pertencem a uma determinada área de avaliação:
+
+SELECT * FROM qualis WHERE titulo LIKE 'A%' AND area_de_avaliacao = 'Área de avaliação';
+

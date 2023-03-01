@@ -1,0 +1,23 @@
+COPY public.qualis (issn_isbn, titulo, area_de_avaliacao, extrato_capes, sigla, url, localidade, ano_avaliacao, tipo_qualis) FROM 'E:\BSI19\TCC2\ValidaLattes\QUALIS\qualis_2017_2020.csv' WITH (FORMAT csv, DELIMITER ',', HEADER true) SET sigla = '', url = 'https://sucupira.capes.gov.br/sucupira/public/consultas/coleta/veiculoPublicacaoQualis/listaConsultaGeralPeriodicos.jsf', localidade = 'Brasil', ano_avaliacao = '2017_2020', tipo_qualis = 'PERIODICOS';
+
+COPY public.qualis (issn_isbn, titulo, area_de_avaliacao, extrato_capes, sigla, url, localidade, ano_avaliacao, tipo_qualis) FROM 'E:\BSI19\TCC2\ValidaLattes\QUALIS\qualis_2017_2020.csv' WITH (FORMAT csv, DELIMITER ',', HEADER true) DEFAULT sigla = '', url = 'https://sucupira.capes.gov.br/sucupira/public/consultas/coleta/veiculoPublicacaoQualis/listaConsultaGeralPeriodicos.jsf', localidade = 'Brasil', ano_avaliacao = '2017_2020', tipo_qualis = 'PERIODICOS';
+
+
+CREATE TEMP TABLE tmp_qualis (
+    issn_isbn varchar(20),
+    titulo varchar(255),
+    area_de_avaliacao varchar(100),
+    extrato_capes varchar(50),
+    sigla text DEFAULT '',
+    url text DEFAULT 'https://sucupira.capes.gov.br/sucupira/public/consultas/coleta/veiculoPublicacaoQualis/listaConsultaGeralPeriodicos.jsf',
+    localidade text DEFAULT 'Brasil',
+    ano_avaliacao text DEFAULT '2017_2020',
+    tipo_qualis text DEFAULT 'PERIODICOS'
+);
+
+COPY tmp_qualis (issn_isbn, titulo, area_de_avaliacao, extrato_capes) FROM 'E:\BSI19\TCC2\ValidaLattes\QUALIS\qualis_2017_2020.csv' WITH (FORMAT csv, DELIMITER ';', HEADER true, ENCODING 'WIN1252');
+
+INSERT INTO public.qualis (issn_isbn, titulo, area_de_avaliacao, extrato_capes, sigla, url, localidade, ano_avaliacao, tipo_qualis)
+SELECT issn_isbn, titulo, area_de_avaliacao, extrato_capes, sigla, url, localidade, ano_avaliacao, tipo_qualis FROM tmp_qualis;
+
+DROP TABLE tmp_qualis;
