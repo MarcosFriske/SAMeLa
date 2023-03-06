@@ -26,6 +26,12 @@ password_db = "admin"
 min_ano = 1900
 max_ano = 2023
 
+# Inicializando o dataframe vazio para receber os dados dos artigos
+
+df_artigos_xml = pd.DataFrame()
+contagem_artigos_com_qualis = 0
+contagem_artigos_sem_qualis = 0
+
 ############### FUNÇÕES ############### 
 
 # Definição da função para selecionar os criterios de avaliacao do instrumento de avaliacao informado
@@ -155,7 +161,10 @@ if df_criterios_avaliacao is not None:
                 # obter a próxima linha vazia do dataframe
                 next_row = len(df_avaliacao)
                 # adicionar os valores à próxima linha vazia
-                df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), count, (row['pontuacao_item']*count)]
+                valor = row['pontuacao_item']*count
+                if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                    valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), count, valor]
                 
             elif 'min_ano' not in xpath_criterio_lattes and 'max_ano' not in xpath_criterio_lattes:
                 xpath = etree.XPath(xpath_criterio_lattes)
@@ -166,16 +175,18 @@ if df_criterios_avaliacao is not None:
                 # obter a próxima linha vazia do dataframe
                 next_row = len(df_avaliacao)
                 # adicionar os valores à próxima linha vazia
-                df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), count, (row['pontuacao_item']*count)]
+                valor = row['pontuacao_item']*count
+                if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                    valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), count, valor]
             
         elif row['considera_qualis']:
-            if xpath_criterio_lattes == 'sem_qualis':
-                # Por enquanto o tratamento com e sem_qualis é feito tudo de uma vez só. Talvez depois separar.
-                continue
-            else:
-                expressao_xpath = xpath_criterio_lattes
-                resultados_xpath = xml.xpath(expressao_xpath, min_ano=min_ano, max_ano=max_ano)
-                
+            
+            expressao_xpath = xpath_criterio_lattes
+            resultados_xpath = xml.xpath(expressao_xpath, min_ano=min_ano, max_ano=max_ano)
+            
+            if df_artigos_xml.empty:
+                # O dataframe está vazio, faça alguma outra coisa aqui
                 # Extrair os dados de cada resultado XPath e adicionar em uma lista
                 dados = []
                 for resultado in resultados_xpath:
@@ -223,17 +234,44 @@ if df_criterios_avaliacao is not None:
                 print("Quantidade de artigos com similaridade no título em relação à tabela_qualis: ", contagem_artigos_com_qualis)
                 print("Quantidade de artigos sem similaridade no título em relação à tabela_qualis: ", contagem_artigos_sem_qualis)
                 
-                ##### Por enquanto tá tratando com e sem qualis aqui, ver como separar depois.
-                # Preencher o dataframe df_avaliacao com os dados disponíveis referente ao Qualis
-                # obter a próxima linha vazia do dataframe
-                next_row = len(df_avaliacao)
-                # adicionar os valores à próxima linha vazia
-                df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), count, (row['pontuacao_item']*count)]
-                # obter a próxima linha vazia do dataframe
-                next_row = len(df_avaliacao)
-                # adicionar os valores à próxima linha vazia
-                df_avaliacao.loc[next_row] = [index, 'Artigo completo publicado em periódico especializado, sem Qualis', row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_sem_qualis, (row['pontuacao_item']*count)]
-
+                # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos sem Qualis
+                if xpath_criterio_lattes == 'sem_qualis':
+                    # obter a próxima linha vazia do dataframe
+                    next_row = len(df_avaliacao)
+                    # adicionar os valores à próxima linha vazia
+                    valor = row['pontuacao_item']*contagem_artigos_sem_qualis
+                    if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                        valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                    df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_sem_qualis, valor]  
+                # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos com Qualis
+                else:
+                    # obter a próxima linha vazia do dataframe
+                    next_row = len(df_avaliacao)
+                    # adicionar os valores à próxima linha vazia
+                    valor = row['pontuacao_item']*contagem_artigos_com_qualis
+                    if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                        valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                    df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_com_qualis, valor] 
+            else:
+                # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos sem Qualis
+                if xpath_criterio_lattes == 'sem_qualis':
+                    # obter a próxima linha vazia do dataframe
+                    next_row = len(df_avaliacao)
+                    # adicionar os valores à próxima linha vazia
+                    valor = row['pontuacao_item']*contagem_artigos_sem_qualis
+                    if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                        valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                    df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_sem_qualis, valor]
+                # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos com Qualis
+                else:
+                    # obter a próxima linha vazia do dataframe
+                    next_row = len(df_avaliacao)
+                    # adicionar os valores à próxima linha vazia
+                    valor = row['pontuacao_item']*contagem_artigos_com_qualis
+                    if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                        valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                    df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_com_qualis, valor] 
+                
 # após preencher o dataframe df_avaliacao
 
 nome_arquivo_excel = 'avaliacao.xlsx'
