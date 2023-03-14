@@ -241,6 +241,36 @@ if df_criterios_avaliacao is not None:
                 # Mostrar o DataFrame
                 print(df_artigos_xml)
                 
+                if df_artigos_xml.empty:
+                    # Pular para a próxima iteração do loop se o título estiver vazio
+                    print('Sem dados de Artigo pulando para próximo critério.')
+                    
+                    # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos sem Qualis
+                    if xpath_criterio_lattes == 'sem_qualis':
+                        # obter a próxima linha vazia do dataframe
+                        next_row = len(df_avaliacao)
+                        
+                        contagem_artigos_sem_qualis = 0
+                        
+                        # adicionar os valores à próxima linha vazia
+                        valor = row['pontuacao_item']*contagem_artigos_sem_qualis
+                        if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                            valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                        df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_sem_qualis, valor]
+                    # Preencher o dataframe df_avaliacao com os dados disponíveis referente aos com Qualis
+                    else:
+                        # obter a próxima linha vazia do dataframe
+                        next_row = len(df_avaliacao)
+                        
+                        contagem_artigos_com_qualis = 0
+                        
+                        # adicionar os valores à próxima linha vazia
+                        valor = row['pontuacao_item']*contagem_artigos_com_qualis
+                        if valor > row['pontuacao_item']*row['qtd_maxima_itens']:
+                            valor = row['pontuacao_item']*row['qtd_maxima_itens']
+                        df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_com_qualis, valor] 
+                    continue
+                
                 # Criar uma lista vazia para armazenar os resultados da verificação
                 existe_titulo_similar = []
                 
