@@ -18,7 +18,7 @@ user_db = "postgres"
 password_db = "admin"
 
 ## Configurações do XML
-xml_filename = "XML/lattesFrozza.xml"
+xml_filename = "XML/Pesquisador_7-Viviane/curriculo.xml"
 xml_file = ET_lxml.parse(xml_filename).getroot()
 xml_string = ET_lxml.tostring(xml_file, encoding='utf-8').decode()
 

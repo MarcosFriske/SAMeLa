@@ -8,7 +8,7 @@ from lxml import etree as ET_lxml
 import pandas as pd
 from fuzzywuzzy import fuzz
 
-xml_filename = r"XML/lattesFrozza.xml"
+xml_filename = r"XML/Pesquisador_8-Frozza/lattesFrozza.xml"
 
 xml = ET_lxml.parse(xml_filename)
 
@@ -60,6 +60,8 @@ artigos = root.findall('.//ARTIGO-PUBLICADO')
 for artigo in artigos:
     dados_basicos = artigo.find('DADOS-BASICOS-DO-ARTIGO')
     print(dados_basicos.attrib)
+    detalhamento_artigo = artigo.find('DETALHAMENTO-DO-ARTIGO')
+    print(detalhamento_artigo.attrib)
     
 min_ano = 1900
 max_ano = 2023
