@@ -23,8 +23,8 @@ user_db = "postgres"
 password_db = "admin"
 
 # Configurando o filtro de ano inicial e final para ser utilizado nos XPATHS do BD
-min_ano = 1900
-max_ano = 2023
+min_ano = 2018
+max_ano = 2022
 
 # Inicializando o dataframe vazio para receber os dados dos artigos
 
@@ -121,6 +121,33 @@ def selecionar_titulos_similares(titulo, min_similaridade):
         if connection:
             cursor.close()
             connection.close()
+    
+# Definição da função para verificar ISSN iguais da tabela Qualis
+def verificar_issn_no_qualis(issn_formatado):
+    try:
+        connection = psycopg2.connect(user=user_db,
+                                      password=password_db,
+                                      host=host_db,
+                                      port=port_db,
+                                      database=database_name)
+        cursor = connection.cursor()
+        postgres_select_query = """SELECT titulo FROM public.qualis
+                                   WHERE issn_isbn = %s"""
+        cursor.execute(postgres_select_query, (issn_formatado,))
+        rows = cursor.fetchall()
+        if rows:
+            return rows[0][0]
+        else:
+            return None
+    except (Exception, psycopg2.Error) as error:
+        print("Failed to verify ISSN in qualis table", error)
+        return None
+    finally:
+        # closing database connection.
+        if connection:
+            cursor.close()
+            connection.close()
+
 
 
 ############### EXECUÇÃO ############### 
@@ -192,6 +219,7 @@ if df_criterios_avaliacao is not None:
                 for resultado in resultados_xpath:
                     dados_artigo = {}
                     dados_basicos_artigo = resultado.find("DADOS-BASICOS-DO-ARTIGO")
+                    detalhamento_artigo = resultado.find("DETALHAMENTO-DO-ARTIGO")
                     dados_artigo['natureza'] = dados_basicos_artigo.get('NATUREZA')
                     dados_artigo['titulo'] = dados_basicos_artigo.get('TITULO-DO-ARTIGO')
                     dados_artigo['ano'] = dados_basicos_artigo.get('ANO-DO-ARTIGO')
@@ -203,6 +231,8 @@ if df_criterios_avaliacao is not None:
                     dados_artigo['doi'] = dados_basicos_artigo.get('DOI')
                     dados_artigo['titulo_ingles'] = dados_basicos_artigo.get('TITULO-DO-ARTIGO-INGLES')
                     dados_artigo['flag_divulgacao_cientifica'] = dados_basicos_artigo.get('FLAG-DIVULGACAO-CIENTIFICA')
+                    dados_artigo['titulo_periodico'] = detalhamento_artigo.get('TITULO-DO-PERIODICO-OU-REVISTA')
+                    dados_artigo['issn'] = detalhamento_artigo.get('ISSN')
                     dados.append(dados_artigo)
 
                 # Criar um DataFrame do pandas com os dados extraídos
@@ -214,14 +244,38 @@ if df_criterios_avaliacao is not None:
                 # Criar uma lista vazia para armazenar os resultados da verificação
                 existe_titulo_similar = []
                 
-                # Para cada linha do dataframe 'df_artigos_xml', verificar se o título está presente na tabela 'qualis'
+                # Para cada linha do dataframe 'df_artigos_xml', verificar se o título do periodico está presente na tabela 'qualis'
                 for idx, row_artigo in df_artigos_xml.iterrows():
-                    titulo = row_artigo['titulo']
-                    titulos_qualis = selecionar_titulos_similares(titulo, 0.7)
-                    if titulos_qualis:
-                        existe_titulo_similar.append(True)
+                    
+                    if row_artigo['issn']:
+                        # Executar lógica quando o ISSN está preenchido
+                        # Adicionar hífen no quinto caractere
+                        issn_formatado = "{}-{}".format(row_artigo['issn'][:4], row_artigo['issn'][4:])
+                        # Executar lógica quando o ISSN está preenchido
+                        print("ISSN preenchido: ", issn_formatado)
+                        titulo_da_issn = verificar_issn_no_qualis(issn_formatado)
+                        if titulo_da_issn:
+                            existe_titulo_similar.append(True)
+                        else:
+                            # Executar lógica quando o ISSN não está preenchido
+                            print(f"Não achou ISSN no Qualis: {titulo_da_issn}")
+                        
+                            titulo = row_artigo['titulo_periodico']
+                            titulos_qualis = selecionar_titulos_similares(titulo, 0.7)
+                            if titulos_qualis:
+                                existe_titulo_similar.append(True)
+                            else:
+                                existe_titulo_similar.append(False)
                     else:
-                        existe_titulo_similar.append(False)
+                        # Executar lógica quando o ISSN não está preenchido
+                        print(f"ISSN não preenchido no artigo: {df_artigos_xml['titulo']}")
+                    
+                        titulo = row_artigo['titulo_periodico']
+                        titulos_qualis = selecionar_titulos_similares(titulo, 0.7)
+                        if titulos_qualis:
+                            existe_titulo_similar.append(True)
+                        else:
+                            existe_titulo_similar.append(False)
                 
                 # Adicionar a lista de resultados como uma nova coluna no dataframe 'df_artigos_xml'
                 df_artigos_xml['existe_titulo_similar'] = existe_titulo_similar
