@@ -76,7 +76,7 @@ def carregar_lattes_xml(id_servidor):
         cursor = connection.cursor()
         postgres_select_query = """SELECT lattes_xml FROM public.servidores
                                 WHERE id_servidor = %s"""
-        id_servidor_select = (id_servidor)
+        id_servidor_select = (id_servidor,)
         cursor.execute(postgres_select_query, id_servidor_select)
         rows = cursor.fetchall()
         if rows:

@@ -18,7 +18,7 @@ user_db = "postgres"
 password_db = "admin"
 
 ## Configurações do XML
-xml_filename = "XML/Pesquisador_7-Viviane/curriculo.xml"
+xml_filename = "XML/20230330/CurriculoANGELOAUGUSTOFROZZA.xml"
 xml_file = ET_lxml.parse(xml_filename).getroot()
 xml_string = ET_lxml.tostring(xml_file, encoding='utf-8').decode()
 
@@ -210,8 +210,8 @@ def menu():
                     print("Opção inválida.")
             matricula = input("Informe a matricula do servidor: ")
             senha = input("Informe a senha do servidor: ")
-            senha = b'{senha}'
-            senha_hash = bcrypt.hashpw(senha, bcrypt.gensalt())
+            senha_bytes = senha.encode('utf-8')
+            senha_hash = bcrypt.hashpw(senha_bytes, bcrypt.gensalt())
             nome = input("Informe o nome do servidor: ")
             nome = nome.upper()
             lattes_link = input("Informe o link do lattes: ")
