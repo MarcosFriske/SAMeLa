@@ -1,0 +1,25 @@
+//templates/profile.html
+{% extends 'layout.html' %}
+  
+{% block title %}Profile{% endblock %}
+  
+{% block content %}
+<h1>Seu Perfil</h1>
+<div>
+    <p>Os detalhes da sua conta seguem abaixo:</p>
+    <table>
+        <tr>
+            <td>Nome:</td>
+            <td>{{ account['nome'] }}</td>
+        </tr>
+  <tr>
+            <td>Matricula:</td>
+            <td>{{ account['matricula'] }}</td>
+        </tr>
+        <tr>
+            <td>E-mail:</td>
+            <td>{{ account['e_mail'] }}</td>
+        </tr>
+    </table>
+</div>
+{% endblock %}

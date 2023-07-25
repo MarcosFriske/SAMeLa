@@ -1,0 +1,100 @@
+//templates/register.html
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="utf-8">
+  <title>Register</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+  <!-- Google Fonts -->
+  <link href='https://fonts.googleapis.com/css?family=Passion+One' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+ </head>
+ <body style="background-color:#ccc;">
+ <div class="container">
+   <div class="row main">
+    <div class="main-login main-center">
+    <h5>Registrar um novo usuário.</h5>
+     <form action="{{ url_for('register') }}" method="post" autocomplete="off"> 
+      <div class="form-group">
+       <label for="name" class="cols-sm-2 control-label">Seu nome completo</label>
+       <div class="cols-sm-10">
+        <div class="input-group">
+         <span class="input-group-addon"><i class="fa fa-user fa" aria-hidden="true"></i></span>
+         <input type="text" class="form-control" name="fullname" id="fullname"  placeholder="Digite seu nome" 
+         value="{{ request.form['fullname'] if 'fullname' in request.form else '' }}" required />
+        </div>
+       </div>
+      </div>
+      <div class="form-group">
+       <label for="email" class="cols-sm-2 control-label">Seu Email</label>
+       <div class="cols-sm-10">
+        <div class="input-group">
+         <span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
+         <input type="text" class="form-control" name="email" id="email"  placeholder="Digite seu E-mail" 
+         value="{{ request.form['email'] if 'email' in request.form else '' }}" required />
+        </div>
+       </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="cols-sm-2 control-label">Lattes iD</label>
+        <div class="cols-sm-10">
+         <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-link fa" aria-hidden="true"></i></span>
+          <input type="text" class="form-control" name="lattes_link" id="lattes_link"  placeholder="http://lattes.cnpq.br/XXXXXXXXXXXXXXXX" 
+          value="{{ request.form['lattes_link'] if 'lattes_link' in request.form else '' }}" required />
+         </div>
+        </div>
+       </div>
+  
+      <div class="form-group">
+       <label for="matricula" class="cols-sm-2 control-label">Sua matricula</label>
+       <div class="cols-sm-10">
+        <div class="input-group">
+         <span class="input-group-addon"><i class="fa fa-users fa" aria-hidden="true"></i></span>
+         <input type="text" class="form-control" name="matricula" id="matricula" placeholder="Digite sua matricula" 
+         value="{{ request.form['matricula'] if 'matricula' in request.form else '' }}" required />
+        </div>
+       </div>
+      </div>
+  
+      <div class="form-group">
+       <label for="password" class="cols-sm-2 control-label">Sua senha</label>
+       <div class="cols-sm-10">
+        <div class="input-group">
+         <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
+         <input type="password" class="form-control" name="password" placeholder="Digite sua senha" id="password" 
+         value="{{ request.form['password'] if 'password' in request.form else '' }}" required />
+        </div>
+       </div>
+      </div>
+  
+      <div class="form-group ">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-dismissible fade show {{ category }}" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+       <input type="submit" value="Registrar" class="form-control btn btn-primary " name="">
+       <p style="padding:5px;">
+        
+      </div>
+        
+     </form>
+    </div>
+   </div>
+  </div>
+ <!-- Scripts do Bootstrap e do jQuery -->
+ <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+ </body>
+</html>
