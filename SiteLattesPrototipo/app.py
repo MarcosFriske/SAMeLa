@@ -1,12 +1,15 @@
 #app.py
-from flask import Flask, request, session, redirect, url_for, render_template, flash
+from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
 import re 
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = 'SAMeLa'
+app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=10)
+COOKIE_TIME_OUT = 60*60*24*7 #7 days
 
 # Dados da conexão
 DB_HOST = "localhost"
@@ -20,23 +23,19 @@ conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_
 def home():
     # Check if user is loggedin
     if 'loggedin' in session:
-    
         # User is loggedin show them the home page
-        return render_template('home.html', nome_completo=session['nome_completo'].title())
+        return render_template('home.html', nome_completo=session['nome_completo'].title(), role=session['role'])
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
  
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-   
-    # Check if "matricula" and "password" POST requests exist (user submitted form)
-    if request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
-        matricula = request.form['matricula']
- 
-        password = request.form['password']
-        print(password)
- 
+    
+    # Login com Lembre-me (Cookies)
+    if 'matricula' in request.cookies:
+        matricula = request.cookies.get('matricula')
+        password = request.cookies.get('senha')
         # Check if account exists using MySQL
         cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
         # Fetch one record and return result
@@ -51,7 +50,48 @@ def login():
                 session['loggedin'] = True
                 session['id'] = account['id_servidor']
                 session['matricula'] = account['matricula']
+                session['senha'] = account['senha']
                 session['nome_completo'] = account['nome']
+                session['role'] = account['tipo_servidor']
+                # Redirect to home page
+                return redirect(url_for('home'))
+            else:
+                # Account doesnt exist or matricula/password incorrect
+                flash('Matricula/Senha incorretos.', 'alert-warning')
+        else:
+            # Account doesnt exist or matricula/password incorrect
+            flash('Matricula/Senha incorretos.', 'alert-warning')
+    
+    # Checar se foi tentativa de login normal, "matricula" e "password" POST request existe (usuario submeteu o formulario)
+    elif request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
+        matricula = request.form['matricula']
+        password = request.form['password']
+        remember = True if request.form.get('remember') else False
+        print(password)
+         
+        # Check if account exists using MySQL
+        cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
+        # Fetch one record and return result
+        account = cursor.fetchone()
+        
+        if account:
+            password_rs = account['senha']
+            print(password_rs)
+            # If account exists in users table in out database
+            if check_password_hash(password_rs, password):
+                # Create session data, we can access this data in other routes
+                session['loggedin'] = True
+                session['id'] = account['id_servidor']
+                session['matricula'] = account['matricula']
+                session['senha'] = account['senha']
+                session['nome_completo'] = account['nome']
+                session['role'] = account['tipo_servidor']
+                if remember:
+                    resp = make_response(redirect(url_for('home')))
+                    resp.set_cookie('matricula', matricula, max_age=COOKIE_TIME_OUT)
+                    resp.set_cookie('senha', password, max_age=COOKIE_TIME_OUT)
+                    resp.set_cookie('remember', 'checked', max_age=COOKIE_TIME_OUT)
+                    return resp
                 # Redirect to home page
                 return redirect(url_for('home'))
             else:
@@ -110,13 +150,22 @@ def register():
 @app.route('/logout')
 def logout():
     # Remove session data, this will log the user out
-   session.pop('loggedin', None)
-   session.pop('id', None)
-   session.pop('matricula', None)
-   session.pop('nome_completo', None)
-   # Redirect to login page
-   return redirect(url_for('login'))
-  
+    session.pop('loggedin', None)
+    session.pop('id', None)
+    session.pop('matricula', None)
+    session.pop('senha', None)
+    session.pop('nome_completo', None)
+    session.pop('role', None)
+   
+    # Remove cookies
+    resp = make_response(redirect(url_for('login')))
+    resp.set_cookie('matricula', '', max_age=0)
+    resp.set_cookie('senha', '', max_age=0)
+    resp.set_cookie('remember', '', max_age=0)
+    
+    # Redirect to login page
+    return resp
+      
 @app.route('/profile')
 def profile(): 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -131,4 +180,5 @@ def profile():
     return redirect(url_for('login'))
  
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
+    app.run()

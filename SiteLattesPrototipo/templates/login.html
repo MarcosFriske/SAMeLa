@@ -15,10 +15,10 @@
     <p>Por favor, informe sua matricula e senha</p>
     <form class="form-group" action="{{ url_for('login') }}" method="post">
         <label>Matricula</label>
-        <input type="text" class="form-control" name="matricula" placeholder="Número de matricula" id="matricula" required>
+        <input type="text" class="form-control" name="matricula" value="{% if 'matricula' in request.cookies %} {{ request.cookies.get('matricula') }} {% endif %}" placeholder="Número de matricula" id="matricula" required>
         <label>Senha</label>
-        <input type="password" class="form-control" name="password" placeholder="Senha" id="password" required>
-        <input type="checkbox" value="checked"><b> Lembre-me</b>
+        <input type="password" class="form-control" name="password" value="{% if 'password' in request.cookies %} {{ request.cookies.get('password') }} {% endif %}" placeholder="Senha" id="password" required>
+        <input type="checkbox" value="checked" name="remember" checked="{% if 'remember' in request.cookies %} {{ request.cookies.get('remember') }} {% endif %}" id="remember"><b> Lembre-me</b>
         <input type="submit" value="Login" class="form-control btn btn-success " name="">
     </form>
     {% with messages = get_flashed_messages(with_categories=true) %}
