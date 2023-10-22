@@ -15,6 +15,8 @@
                 <th>Data de Fim</th>
                 <th>Localização</th>
                 <th>Descrição</th>
+                <th>Editar</th>
+                <th>Remover</th>
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
             {% for evento in eventos %}
@@ -26,6 +28,8 @@
                 <td>{{ evento.data_fim.strftime('%d/%m/%Y') }}</td>
                 <td>{{ evento.localizacao }}</td>
                 <td>{{ evento.descricao }}</td>
+                <td><a href="/editar_evento/{{ evento.id_evento }}">Editar</a></td>
+                <td><a href="#" onclick="removerEvento('{{ evento.id_evento }}')">Remover</a></td>
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
             {% endfor %}
@@ -70,4 +74,25 @@
             </form>
         {% endif %}
     </div>
+
+    <script>
+        function removerEvento(evento_id) {
+            if (confirm("Tem certeza de que deseja remover este evento?")) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/remover_evento/' + evento_id;
+    
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'evento_id';
+                hiddenField.value = evento_id;
+    
+                form.appendChild(hiddenField);
+    
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+
 {% endblock %}

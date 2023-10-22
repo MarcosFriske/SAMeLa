@@ -274,6 +274,68 @@ def criar_evento():
             flash(f'Ocorreu um erro ao criar o evento: {str(e)}', 'alert-danger')
             
     return redirect(url_for('eventos'))
+
+@app.route('/remover_evento/<int:evento_id>', methods=['GET', 'POST'])
+def remover_evento(evento_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM eventos WHERE id_evento = %s", (evento_id,))
+        conn.commit()
+
+        flash('Evento removido com sucesso!', 'alert-success')
+        return redirect(url_for('eventos'))
+
+    return redirect(url_for('eventos'))
+
+@app.route('/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
+def editar_evento(evento_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            identificacao = request.form['identificacao']
+            tipo_evento = request.form['tipo_evento']
+            data_inicio = request.form['data_inicio']
+            data_fim = request.form['data_fim']
+            localizacao = request.form['localizacao']
+            descricao = request.form['descricao']
+            id_instrumento_avaliacao = request.form['fk_id_instrumento_avaliacao']
+
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE eventos 
+                SET identificacao = %s, 
+                    tipo_evento = %s, 
+                    data_inicio = %s, 
+                    data_fim = %s, 
+                    localizacao = %s, 
+                    descricao = %s, 
+                    fk_id_instrumento_avaliacao = %s 
+                WHERE id_evento = %s
+            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, id_instrumento_avaliacao, evento_id))
+            conn.commit()
+
+            flash('Evento atualizado com sucesso!', 'alert-success')
+            return redirect(url_for('eventos'))
+        except Exception as e:
+            flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'alert-danger')
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
+    evento = cursor.fetchone()
+
+    cursor.execute('SELECT * FROM instrumentos_avaliacao')
+    instrumentos = cursor.fetchall()
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
+    tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+
+    return render_template('editar_evento.html', evento=evento, instrumentos=instrumentos, tipos_evento=tipos_evento)
  
 if __name__ == "__main__":
     # app.run(debug=True)

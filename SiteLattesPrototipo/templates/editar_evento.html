@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+
+{% block title %}Editar Evento{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h2>Editar Evento</h2>
+        <form method="post" action="/editar_evento/{{ evento.id_evento }}">
+            <label for="identificacao">Identificação:</label><br>
+            <input type="text" id="identificacao" name="identificacao" value="{{ evento.identificacao }}" required><br>
+
+            <label for="tipo_evento">Tipo de Evento:</label><br>
+            <select id="tipo_evento" name="tipo_evento" required>
+                {% for tipo in tipos_evento %}
+                    <option value="{{ tipo }}" {% if evento.tipo_evento == tipo %} selected {% endif %}>{{ tipo }}</option>
+                {% endfor %}
+            </select><br>
+
+            <label for="data_inicio">Data de Início:</label><br>
+            <input type="date" id="data_inicio" name="data_inicio" value="{{ evento.data_inicio.strftime('%Y-%m-%d') }}" required><br>
+
+            <label for="data_fim">Data de Fim:</label><br>
+            <input type="date" id="data_fim" name="data_fim" value="{{ evento.data_fim.strftime('%Y-%m-%d') }}" required><br>
+
+            <label for="localizacao">Localização:</label><br>
+            <input type="text" id="localizacao" name="localizacao" value="{{ evento.localizacao }}" required><br>
+
+            <label for="descricao">Descrição:</label><br>
+            <textarea id="descricao" name="descricao" required>{{ evento.descricao }}</textarea><br>
+
+            <label for="fk_id_instrumento_avaliacao">Nome do Instrumento de Avaliação:</label><br>
+            <select id="fk_id_instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
+                {% for instrumento in instrumentos %}
+                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if evento.fk_id_instrumento_avaliacao == instrumento.id_instrumento_avaliacao %} selected {% endif %}>{{ instrumento.nome }}</option>
+                {% endfor %}
+            </select><br>
+
+            <input type="submit" value="Atualizar Evento">
+        </form>
+    </div>
+{% endblock %}
