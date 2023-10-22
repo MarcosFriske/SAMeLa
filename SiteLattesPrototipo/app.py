@@ -5,6 +5,8 @@ import psycopg2.extras
 import re 
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+from lxml import etree
+import chardet
 
 app = Flask(__name__)
 app.secret_key = 'SAMeLa'
@@ -145,8 +147,50 @@ def register():
         flash('Por favor, preencha o formulário completo!', 'alert-warning')
     # Show registration form with message (if any)
     return render_template('register.html')
-   
-   
+
+
+@app.route('/upload_xml', methods=['POST'])
+def upload_xml():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+
+    if 'file' not in request.files:
+        flash('Nenhum arquivo foi selecionado', 'alert-warning')
+        return redirect(request.url)
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('Nenhum arquivo foi selecionado', 'alert-warning')
+        return redirect(request.url)
+
+    if file:
+        xml_content = file.read()
+        
+        # Detecta a codificação correta do arquivo
+        detected_encoding = chardet.detect(xml_content)['encoding']
+
+        try:
+            etree.fromstring(xml_content)
+        except etree.XMLSyntaxError as e:
+            flash('O arquivo fornecido não é um XML válido', 'alert-warning')
+            return redirect(request.url)
+        
+        try:
+            # Convertendo bytes para string usando a codificação detectada
+            xml_string = xml_content.decode(detected_encoding)
+        except UnicodeDecodeError as e:
+            flash('Ocorreu um erro ao decodificar o arquivo', 'alert-danger')
+            return redirect(request.url)
+
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("UPDATE servidores SET lattes_xml = %s, ultimo_upload = current_timestamp WHERE id_servidor = %s", (xml_string, session['id']))
+        conn.commit()
+        flash('Arquivo XML enviado com sucesso', 'alert-success')
+        return redirect(url_for('home'))
+
+    flash('Algo deu errado ao enviar o arquivo', 'alert-danger')
+    return redirect(request.url)
+
 @app.route('/logout')
 def logout():
     # Remove session data, this will log the user out

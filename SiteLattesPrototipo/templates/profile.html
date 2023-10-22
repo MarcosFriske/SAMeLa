@@ -1,25 +1,55 @@
 //templates/profile.html
 {% extends 'layout.html' %}
-  
+
 {% block title %}Profile{% endblock %}
-  
+
 {% block content %}
-<h1>Seu Perfil</h1>
-<div>
-    <p>Os detalhes da sua conta seguem abaixo:</p>
-    <table>
-        <tr>
-            <td>Nome:</td>
-            <td>{{ account['nome'] }}</td>
-        </tr>
-  <tr>
-            <td>Matricula:</td>
-            <td>{{ account['matricula'] }}</td>
-        </tr>
-        <tr>
-            <td>E-mail:</td>
-            <td>{{ account['e_mail'] }}</td>
-        </tr>
-    </table>
-</div>
+    <h1>Seu Perfil</h1>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <tr>
+                <th>Nome:</th>
+                <td>{{ account['nome'] }}</td>
+            </tr>
+            <tr>
+                <th>Matricula:</th>
+                <td>{{ account['matricula'] }}</td>
+            </tr>
+            <tr>
+                <th>E-mail:</th>
+                <td>{{ account['e_mail'] }}</td>
+            </tr>
+            <tr>
+                <th>Último Upload de XML:</th>
+                <td>
+                    {% if account['ultimo_upload'] %}
+                        {{ account['ultimo_upload'].strftime('%d/%m/%Y %H:%M:%S') }}
+                    {% else %}
+                        Nenhum XML foi enviado ainda.
+                    {% endif %}
+                </td>                
+            </tr>
+        </table>
+    </div>
+    
+    <hr>
+
+    <h2>Upload de XML do Currículo Lattes</h2>
+    <form method="post" action="/upload_xml" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Escolha um arquivo XML</label>
+            <input type="text" class="form-control" id="file-path" placeholder="Nenhum arquivo selecionado" readonly>
+            <input type="file" class="form-control-file" id="file" name="file" style="display: none;">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file').click();">Procurar...</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Enviar</button>
+    </form>
+    
+    <script>
+        document.getElementById("file").addEventListener("change", function() {
+            var fileName = this.value.split("\\").pop();
+            document.getElementById("file-path").value = fileName || "Nenhum arquivo selecionado";
+        });
+    </script>       
+
 {% endblock %}
