@@ -1,0 +1,73 @@
+//templates/eventos.html
+{% extends 'layout.html' %}
+
+{% block title %}Eventos{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h2>Eventos Disponíveis</h2>
+        <table class="table">
+            <tr>
+                <th>ID</th>
+                <th>Identificação</th>
+                <th>Tipo de Evento</th>
+                <th>Data de Início</th>
+                <th>Data de Fim</th>
+                <th>Localização</th>
+                <th>Descrição</th>
+                <!-- Adicione mais colunas conforme necessário -->
+            </tr>
+            {% for evento in eventos %}
+            <tr>
+                <td>{{ evento.id_evento }}</td>
+                <td>{{ evento.identificacao }}</td>
+                <td>{{ evento.tipo_evento }}</td>
+                <td>{{ evento.data_inicio.strftime('%d/%m/%Y') }}</td>
+                <td>{{ evento.data_fim.strftime('%d/%m/%Y') }}</td>
+                <td>{{ evento.localizacao }}</td>
+                <td>{{ evento.descricao }}</td>
+                <!-- Adicione mais colunas conforme necessário -->
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% if user_role == 'Docente' %}
+            <h2>Inscrever-se em Evento</h2>
+            <!-- Adicione o formulário para inscrição em eventos -->
+        {% elif user_role == 'Administrador' %}
+            <h2>Criar Novo Evento</h2>
+            <form method="post" action="/criar_evento">
+                <label for="identificacao">Identificação:</label><br>
+                <input type="text" id="identificacao" name="identificacao" required><br>
+        
+                <label for="tipo_evento">Tipo de Evento:</label><br>
+                <select id="tipo_evento" name="tipo_evento" required>
+                    {% for tipo in tipos_evento %}
+                        <option value="{{ tipo }}">{{ tipo }}</option>
+                    {% endfor %}
+                </select><br>
+        
+                <label for="data_inicio">Data de Início:</label><br>
+                <input type="date" id="data_inicio" name="data_inicio" required><br>
+
+                <label for="data_fim">Data de Fim:</label><br>
+                <input type="date" id="data_fim" name="data_fim" required><br>
+        
+                <label for="localizacao">Localização:</label><br>
+                <input type="text" id="localizacao" name="localizacao" required><br>
+        
+                <label for="descricao">Descrição:</label><br>
+                <textarea id="descricao" name="descricao" required></textarea><br>
+        
+                <label for="fk_id_instrumento_avaliacao">Nome do Instrumento de Avaliação:</label><br>
+                <select id="fk_id_instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
+                    {% for instrumento in instrumentos %}
+                        <option value="{{ instrumento.id_instrumento_avaliacao }}">{{ instrumento.nome }}</option>
+                    {% endfor %}
+                </select><br>
+                
+                <input type="submit" value="Criar Evento">
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}

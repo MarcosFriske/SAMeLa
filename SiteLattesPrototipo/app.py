@@ -4,7 +4,7 @@ import psycopg2 #pip install psycopg2
 import psycopg2.extras
 import re 
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import timedelta
+from datetime import datetime, timedelta
 from lxml import etree
 import chardet
 
@@ -156,12 +156,12 @@ def upload_xml():
 
     if 'file' not in request.files:
         flash('Nenhum arquivo foi selecionado', 'alert-warning')
-        return redirect(request.url)
+        return redirect(url_for('profile'))
 
     file = request.files['file']
     if file.filename == '':
         flash('Nenhum arquivo foi selecionado', 'alert-warning')
-        return redirect(request.url)
+        return redirect(url_for('profile'))
 
     if file:
         xml_content = file.read()
@@ -173,23 +173,23 @@ def upload_xml():
             etree.fromstring(xml_content)
         except etree.XMLSyntaxError as e:
             flash('O arquivo fornecido não é um XML válido', 'alert-warning')
-            return redirect(request.url)
+            return redirect(url_for('profile'))
         
         try:
             # Convertendo bytes para string usando a codificação detectada
             xml_string = xml_content.decode(detected_encoding)
         except UnicodeDecodeError as e:
             flash('Ocorreu um erro ao decodificar o arquivo', 'alert-danger')
-            return redirect(request.url)
+            return redirect(url_for('profile'))
 
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("UPDATE servidores SET lattes_xml = %s, ultimo_upload = current_timestamp WHERE id_servidor = %s", (xml_string, session['id']))
         conn.commit()
         flash('Arquivo XML enviado com sucesso', 'alert-success')
-        return redirect(url_for('home'))
+        return redirect(url_for('profile'))
 
     flash('Algo deu errado ao enviar o arquivo', 'alert-danger')
-    return redirect(request.url)
+    return redirect(url_for('profile'))
 
 @app.route('/logout')
 def logout():
@@ -222,6 +222,58 @@ def profile():
         return render_template('profile.html', account=account)
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
+
+@app.route('/eventos')
+def eventos():
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('SELECT * FROM eventos')
+    eventos = cursor.fetchall()
+    
+    cursor.execute('SELECT * FROM instrumentos_avaliacao')
+    instrumentos = cursor.fetchall()
+    
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
+    tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+
+    # Verifique se o usuário está logado
+    if 'loggedin' in session:
+        return render_template('eventos.html', eventos=eventos, user_role=session['role'], instrumentos=instrumentos, tipos_evento=tipos_evento)
+    # Caso contrário, redirecione para a página de login
+    return redirect(url_for('login'))
+
+@app.route('/criar_evento', methods=['POST'])
+def criar_evento():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            identificacao = request.form['identificacao']
+            tipo_evento = request.form['tipo_evento']
+            data_inicio = request.form['data_inicio']
+            data_fim = request.form['data_fim']
+            localizacao = request.form['localizacao']
+            descricao = request.form['descricao']
+            data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            data_atualizacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            id_instrumento_avaliacao = request.form['fk_id_instrumento_avaliacao']  # Use diretamente o ID do instrumento recebido
+            print("Valor recebido do formulário:", id_instrumento_avaliacao)  # Adicione esta linha para verificar o valor recebido
+    
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO eventos (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, data_criacao, data_atualizacao, fk_id_instrumento_avaliacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, data_criacao, data_atualizacao, id_instrumento_avaliacao))
+    
+            conn.commit()
+    
+            flash('Novo evento criado com sucesso!', 'alert-success')
+        except psycopg2.Error as e:
+            conn.rollback()  # Realiza um rollback da transação para garantir a consistência
+            flash(f'Ocorreu um erro ao criar o evento: {str(e)}', 'alert-danger')
+            
+    return redirect(url_for('eventos'))
  
 if __name__ == "__main__":
     # app.run(debug=True)
