@@ -336,6 +336,89 @@ def editar_evento(evento_id):
     tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
     return render_template('editar_evento.html', evento=evento, instrumentos=instrumentos, tipos_evento=tipos_evento)
+
+@app.route('/instrumentos_avaliacao')
+def instrumentos_avaliacao():
+    if 'loggedin' in session and session['role'] == 'Administrador':
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute('SELECT * FROM instrumentos_avaliacao')
+        instrumentos = cursor.fetchall()
+        return render_template('instrumentos_avaliacao.html', instrumentos=instrumentos)
+    else:
+        return redirect(url_for('login'))
+    
+@app.route('/criar_instrumento', methods=['POST'])
+def criar_instrumento():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            nome = request.form['nome']
+            descricao = request.form['descricao']
+            ativo = request.form.get('ativo') == 'on'  # Verifica se a caixa de seleção está marcada e atribui True ou False
+
+            data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Obtém a data atual
+
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO instrumentos_avaliacao (nome, descricao, ativo, data_criacao)
+                VALUES (%s, %s, %s, %s)
+            """, (nome, descricao, ativo, data_criacao))
+
+            conn.commit()
+
+            flash('Novo instrumento de avaliação criado com sucesso!', 'alert-success')
+        except psycopg2.Error as e:
+            conn.rollback()  # Realiza um rollback da transação para garantir a consistência
+            flash(f'Ocorreu um erro ao criar o instrumento de avaliação: {str(e)}', 'alert-danger')
+            
+    return redirect(url_for('instrumentos_avaliacao'))
+
+@app.route('/editar_instrumento/<int:instrumento_id>', methods=['GET', 'POST'])
+def editar_instrumento(instrumento_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            nome = request.form['nome']
+            descricao = request.form['descricao']
+            ativo = request.form.get('ativo') == 'on'
+
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE instrumentos_avaliacao 
+                SET nome = %s, 
+                    descricao = %s, 
+                    ativo = %s 
+                WHERE id_instrumento_avaliacao = %s
+            """, (nome, descricao, ativo, instrumento_id))
+            conn.commit()
+
+            flash('Instrumento de avaliação atualizado com sucesso!', 'alert-success')
+            return redirect(url_for('instrumentos_avaliacao'))
+        except Exception as e:
+            flash(f'Ocorreu um erro ao atualizar o instrumento de avaliação: {str(e)}', 'alert-danger')
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT * FROM instrumentos_avaliacao WHERE id_instrumento_avaliacao = %s", (instrumento_id,))
+    instrumento = cursor.fetchone()
+
+    return render_template('editar_instrumento.html', instrumento=instrumento)
+
+
+@app.route('/remover_instrumento/<int:instrumento_id>', methods=['POST'])
+def remover_instrumento(instrumento_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM instrumentos_avaliacao WHERE id_instrumento_avaliacao = %s", (instrumento_id,))
+    conn.commit()
+
+    flash('Instrumento de avaliação removido com sucesso!', 'alert-success')
+    return redirect(url_for('instrumentos_avaliacao'))
  
 if __name__ == "__main__":
     # app.run(debug=True)

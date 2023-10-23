@@ -1,0 +1,66 @@
+{% extends 'layout.html' %}
+
+{% block title %}Instrumentos de Avaliação{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h2>Instrumentos de Avaliação Disponíveis</h2>
+        <table class="table">
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Data de Criação</th>
+                <th>Ativo</th>
+                <th>Editar</th>
+                <th>Remover</th>
+            </tr>
+            {% for instrumento in instrumentos %}
+            <tr>
+                <td>{{ instrumento.id_instrumento_avaliacao }}</td>
+                <td>{{ instrumento.nome }}</td>
+                <td>{{ instrumento.descricao }}</td>
+                <td>{{ instrumento.data_criacao }}</td>
+                <td>{{ instrumento.ativo }}</td>
+                <td><a href="/editar_instrumento/{{ instrumento.id_instrumento_avaliacao }}">Editar</a></td>
+                <td><a href="#" onclick="removerInstrumento('{{ instrumento.id_instrumento_avaliacao }}')">Remover</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h2>Adicionar Novo Instrumento de Avaliação</h2>
+        <form method="post" action="/criar_instrumento">
+            <label for="nome">Nome:</label><br>
+            <input type="text" id="nome" name="nome" required><br>
+        
+            <label for="descricao">Descrição:</label><br>
+            <textarea id="descricao" name="descricao" required></textarea><br>
+        
+            <label for="ativo">Ativo:</label><br>
+            <input type="checkbox" id="ativo" name="ativo" checked><br><br>
+        
+            <input type="submit" value="Adicionar Instrumento de Avaliação">
+        </form>              
+
+    </div>
+
+    <script>
+        function removerInstrumento(instrumento_id) {
+            if (confirm("Tem certeza de que deseja remover este instrumento de avaliação?")) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/remover_instrumento/' + instrumento_id;
+    
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'instrumento_id';
+                hiddenField.value = instrumento_id;
+    
+                form.appendChild(hiddenField);
+    
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}
