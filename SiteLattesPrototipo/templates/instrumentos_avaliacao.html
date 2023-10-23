@@ -12,8 +12,10 @@
                 <th>Descrição</th>
                 <th>Data de Criação</th>
                 <th>Ativo</th>
+                {% if user_role == 'Administrador' %}
                 <th>Editar</th>
                 <th>Remover</th>
+                {% endif %}
             </tr>
             {% for instrumento in instrumentos %}
             <tr>
@@ -22,8 +24,10 @@
                 <td>{{ instrumento.descricao }}</td>
                 <td>{{ instrumento.data_criacao }}</td>
                 <td>{{ instrumento.ativo }}</td>
+                {% if user_role == 'Administrador' %}
                 <td><a href="/editar_instrumento/{{ instrumento.id_instrumento_avaliacao }}">Editar</a></td>
                 <td><a href="#" onclick="removerInstrumento('{{ instrumento.id_instrumento_avaliacao }}')">Remover</a></td>
+                {% endif %}
             </tr>
             {% endfor %}
         </table>

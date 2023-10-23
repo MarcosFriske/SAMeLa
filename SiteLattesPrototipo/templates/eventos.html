@@ -15,8 +15,10 @@
                 <th>Data de Fim</th>
                 <th>Localização</th>
                 <th>Descrição</th>
+                {% if user_role == 'Administrador' %}
                 <th>Editar</th>
                 <th>Remover</th>
+                {% endif %}
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
             {% for evento in eventos %}
@@ -28,8 +30,10 @@
                 <td>{{ evento.data_fim.strftime('%d/%m/%Y') }}</td>
                 <td>{{ evento.localizacao }}</td>
                 <td>{{ evento.descricao }}</td>
+                {% if user_role == 'Administrador' %}
                 <td><a href="/editar_evento/{{ evento.id_evento }}">Editar</a></td>
                 <td><a href="#" onclick="removerEvento('{{ evento.id_evento }}')">Remover</a></td>
+                {% endif %}
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
             {% endfor %}

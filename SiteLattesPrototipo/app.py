@@ -343,7 +343,7 @@ def instrumentos_avaliacao():
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute('SELECT * FROM instrumentos_avaliacao')
         instrumentos = cursor.fetchall()
-        return render_template('instrumentos_avaliacao.html', instrumentos=instrumentos)
+        return render_template('instrumentos_avaliacao.html', instrumentos=instrumentos, user_role=session['role'])
     else:
         return redirect(url_for('login'))
     
