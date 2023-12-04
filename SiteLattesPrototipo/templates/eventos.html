@@ -16,8 +16,8 @@
                 <th>Localização</th>
                 <th>Descrição</th>
                 {% if user_role == 'Administrador' %}
-                <th>Editar</th>
-                <th>Remover</th>
+                    <th>Editar</th>
+                    <th>Remover</th>
                 {% endif %}
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
@@ -31,8 +31,8 @@
                 <td>{{ evento.localizacao }}</td>
                 <td>{{ evento.descricao }}</td>
                 {% if user_role == 'Administrador' %}
-                <td><a href="/editar_evento/{{ evento.id_evento }}">Editar</a></td>
-                <td><a href="#" onclick="removerEvento('{{ evento.id_evento }}')">Remover</a></td>
+                    <td><a href="/editar_evento/{{ evento.id_evento }}">Editar</a></td>
+                    <td><a href="#" onclick="removerEvento('{{ evento.id_evento }}')">Remover</a></td>
                 {% endif %}
                 <!-- Adicione mais colunas conforme necessário -->
             </tr>
@@ -42,9 +42,18 @@
         {% if user_role == 'Docente' %}
             <h2>Inscrever-se em Evento</h2>
             <!-- Adicione o formulário para inscrição em eventos -->
+            <form method="post" action="{{ url_for('inscrever_evento') }}" class="form-group" onsubmit="updateAction()">
+                <label for="evento_id">Selecione o Evento:</label>
+                <select id="evento_id" name="evento_id" required class="form-control">
+                    {% for evento in eventos %}
+                        <option value="{{ evento.id_evento }}">{{ evento.identificacao }}</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Inscrever-se no Evento" class="btn btn-primary mt-3">
+            </form>
         {% elif user_role == 'Administrador' %}
             <h2>Criar Novo Evento</h2>
-            <form method="post" action="/criar_evento">
+            <form method="post" action="{{ url_for('criar_evento') }}">
                 <label for="identificacao">Identificação:</label><br>
                 <input type="text" id="identificacao" name="identificacao" required><br>
         
@@ -79,24 +88,6 @@
         {% endif %}
     </div>
 
-    <script>
-        function removerEvento(evento_id) {
-            if (confirm("Tem certeza de que deseja remover este evento?")) {
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/remover_evento/' + evento_id;
-    
-                const hiddenField = document.createElement('input');
-                hiddenField.type = 'hidden';
-                hiddenField.name = 'evento_id';
-                hiddenField.value = evento_id;
-    
-                form.appendChild(hiddenField);
-    
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/eventos.js') }}"></script>
 
 {% endblock %}

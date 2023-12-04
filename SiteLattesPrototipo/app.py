@@ -242,6 +242,27 @@ def eventos():
     # Caso contrário, redirecione para a página de login
     return redirect(url_for('login'))
 
+@app.route('/avaliacoes')
+def avaliacoes():
+    if 'loggedin' in session and session['role'] == 'Docente':
+        # Lógica para recuperar os eventos ativos e inscritos pelo Docente
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute(
+            'SELECT a.id_avaliacao, a.data_avaliacao, e.identificacao, e.localizacao '
+            'FROM avaliacao a '
+            'JOIN eventos e ON a.fk_id_evento = e.id_evento '
+            'WHERE a.fk_id_servidor = %s AND e.data_fim >= %s',
+            (session['id'], current_datetime)
+        )
+        eventos_inscritos = cursor.fetchall()
+
+        return render_template('avaliacoes.html', eventos_inscritos=eventos_inscritos)
+    else:
+        return redirect(url_for('login'))
+
 @app.route('/criar_evento', methods=['POST'])
 def criar_evento():
     if 'loggedin' not in session or session['role'] != 'Administrador':
@@ -336,6 +357,70 @@ def editar_evento(evento_id):
     tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
     return render_template('editar_evento.html', evento=evento, instrumentos=instrumentos, tipos_evento=tipos_evento)
+
+@app.route('/inscrever_evento/<int:evento_id>', methods=['POST'])
+def inscrever_evento(evento_id):
+    if 'loggedin' in session and session['role'] == 'Docente':
+        # Lógica para verificar se o Docente já está inscrito no evento
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM avaliacao WHERE fk_id_servidor = %s AND fk_id_evento = %s AND data_avaliacao BETWEEN (SELECT data_inicio FROM eventos WHERE id_evento = %s) AND (SELECT data_fim FROM eventos WHERE id_evento = %s)',
+            (session['id'], evento_id, evento_id, evento_id)
+        )
+        inscricao_existente = cursor.fetchone()
+
+        if inscricao_existente:
+            # Docente já está inscrito no evento
+            flash('Você já está inscrito neste evento.', 'warning')
+        else:
+            # Lógica para criar a inscrição na tabela 'avaliacao'
+            cursor.execute(
+                'SELECT localizacao FROM eventos WHERE id_evento = %s',
+                (evento_id,)
+            )
+            localizacao_do_evento = cursor.fetchone()['localizacao']  # Obtém o valor da coluna localizacao
+            
+            cursor.execute(
+                'INSERT INTO avaliacao (organizacao, data_avaliacao, fk_id_servidor, fk_id_evento) VALUES (%s, NOW(), %s, %s)',
+                (localizacao_do_evento, session['id'], evento_id)
+            )
+            conn.commit()
+            flash('Inscrição realizada com sucesso!', 'success')
+
+            # Redirecionar para a página de avaliações após a inscrição
+            return redirect(url_for('avaliacoes'))
+
+    return redirect(url_for('login'))
+    
+@app.route('/ver_avaliacao/<int:evento_id>')
+def ver_avaliacao(evento_id):
+    # Lógica para recuperar e exibir a avaliação do Docente no evento
+    pass
+    
+@app.route('/desinscrever_evento/<int:avaliacao_id>', methods=['POST'])
+def desinscrever_evento(avaliacao_id):
+    if 'loggedin' in session and session['role'] == 'Docente':
+        # Lógica para verificar se o Docente está inscrito no evento
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM avaliacao WHERE id_avaliacao = %s AND fk_id_servidor = %s',
+            (avaliacao_id, session['id'])
+        )
+        inscricao_existente = cursor.fetchone()
+
+        if inscricao_existente:
+            # Lógica para remover a inscrição na tabela 'avaliacao'
+            cursor.execute('DELETE FROM avaliacao WHERE id_avaliacao = %s', (avaliacao_id,))
+            conn.commit()
+            flash('Desinscrição realizada com sucesso!', 'success')
+        else:
+            # O Docente não está inscrito no evento
+            flash('Você não está inscrito neste evento.', 'warning')
+
+        # Redirecionar para a página de avaliações após a desinscrição
+        return redirect(url_for('avaliacoes'))
+
+    return redirect(url_for('login'))
 
 @app.route('/instrumentos_avaliacao')
 def instrumentos_avaliacao():
