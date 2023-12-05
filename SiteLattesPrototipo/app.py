@@ -226,7 +226,7 @@ def profile():
 @app.route('/eventos')
 def eventos():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute('SELECT * FROM eventos')
+    cursor.execute('SELECT * FROM eventos WHERE ativo = true')
     eventos = cursor.fetchall()
     
     cursor.execute('SELECT * FROM instrumentos_avaliacao')
@@ -238,7 +238,7 @@ def eventos():
 
     # Verifique se o usuário está logado
     if 'loggedin' in session:
-        return render_template('eventos.html', eventos=eventos, user_role=session['role'], instrumentos=instrumentos, tipos_evento=tipos_evento)
+        return render_template('eventos.html', eventos=eventos, user_role=session['role'], instrumentos=instrumentos, tipos_evento=tipos_evento, eventos_ativos=bool(eventos))
     # Caso contrário, redirecione para a página de login
     return redirect(url_for('login'))
 
@@ -358,10 +358,12 @@ def editar_evento(evento_id):
 
     return render_template('editar_evento.html', evento=evento, instrumentos=instrumentos, tipos_evento=tipos_evento)
 
-@app.route('/inscrever_evento/<int:evento_id>', methods=['POST'])
-def inscrever_evento(evento_id):
+@app.route('/inscrever_evento', methods=['POST'])
+def inscrever_evento():
     if 'loggedin' in session and session['role'] == 'Docente':
         # Lógica para verificar se o Docente já está inscrito no evento
+        evento_id = request.form.get('evento_id')
+        
         cursor = conn.cursor()
         cursor.execute(
             'SELECT * FROM avaliacao WHERE fk_id_servidor = %s AND fk_id_evento = %s AND data_avaliacao BETWEEN (SELECT data_inicio FROM eventos WHERE id_evento = %s) AND (SELECT data_fim FROM eventos WHERE id_evento = %s)',
@@ -372,13 +374,14 @@ def inscrever_evento(evento_id):
         if inscricao_existente:
             # Docente já está inscrito no evento
             flash('Você já está inscrito neste evento.', 'warning')
+            return redirect(url_for('eventos'))
         else:
             # Lógica para criar a inscrição na tabela 'avaliacao'
             cursor.execute(
                 'SELECT localizacao FROM eventos WHERE id_evento = %s',
                 (evento_id,)
             )
-            localizacao_do_evento = cursor.fetchone()['localizacao']  # Obtém o valor da coluna localizacao
+            localizacao_do_evento = cursor.fetchone()[0]
             
             cursor.execute(
                 'INSERT INTO avaliacao (organizacao, data_avaliacao, fk_id_servidor, fk_id_evento) VALUES (%s, NOW(), %s, %s)',
@@ -389,7 +392,7 @@ def inscrever_evento(evento_id):
 
             # Redirecionar para a página de avaliações após a inscrição
             return redirect(url_for('avaliacoes'))
-
+    
     return redirect(url_for('login'))
     
 @app.route('/ver_avaliacao/<int:evento_id>')

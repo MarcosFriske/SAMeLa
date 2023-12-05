@@ -3,32 +3,40 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-    <h2>Eventos Inscritos</h2>
+    <div class="container">
+        <h2 class="mt-4">Eventos Inscritos</h2>
 
-    {% if eventos_inscritos %}
-        <ul>
-            {% for evento in eventos_inscritos %}
-                <li>
-                    {{ evento.identificacao }} - {{ evento.data_avaliacao.strftime('%d/%m/%Y %H:%M:%S') }}
-                    <a href="{{ url_for('ver_avaliacao', avaliacao_id=evento.id_avaliacao) }}">Ver Avaliação</a>
-                    <a href="#" onclick="desinscreverEvento('{{ evento.id_avaliacao }}')">Desinscrever</a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>Você não está inscrito em nenhum evento no momento.</p>
-    {% endif %}
+        {% if eventos_inscritos %}
+            <table class="table mt-3">
+                <thead>
+                    <tr>
+                        <th>Evento</th>
+                        <th>Data da Avaliação</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos_inscritos %}
+                        <tr>
+                            <td>{{ evento.identificacao }}</td>
+                            <td>{{ evento.data_avaliacao.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('ver_avaliacao', evento_id=evento.id_avaliacao) }}" class="btn btn-primary btn-sm">Ver Avaliação</a>
+                                    <a href="#" onclick="desinscreverEvento('{{ evento.id_avaliacao }}')" class="btn btn-danger btn-sm">Desinscrever</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info mt-3" role="alert">
+                <h4 class="alert-heading">Sem Eventos Inscritos!</h4>
+                <p>Você não está inscrito em nenhum evento no momento.</p>
+            </div>
+        {% endif %}
+    </div>
 
-    <script>
-        function desinscreverEvento(avaliacao_id) {
-            if (confirm("Tem certeza de que deseja desinscrever deste evento?")) {
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/desinscrever_evento/' + avaliacao_id;
-
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/avaliacoes.js') }}"></script>
 {% endblock %}

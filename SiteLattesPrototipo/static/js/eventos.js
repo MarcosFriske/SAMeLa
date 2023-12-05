@@ -15,11 +15,3 @@ function removerEvento(evento_id) {
         form.submit();
     }
 }
-
-function updateAction() {
-    var selectedEventId = document.getElementById('evento_id').value;
-    var form = document.querySelector('form');
-    form.action = "{{ url_for('inscrever_evento', evento_id='') }}" + selectedEventId;
-}
-// Atualizar a ação inicialmente
-updateAction();
