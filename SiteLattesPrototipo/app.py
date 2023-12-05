@@ -1,5 +1,6 @@
 #app.py
-from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response
+from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response, send_file
+import pandas as pd
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
 import re 
@@ -399,6 +400,19 @@ def inscrever_evento():
 def ver_avaliacao(evento_id):
     # Lógica para recuperar e exibir a avaliação do Docente no evento
     pass
+
+@app.route('/download_avaliacao/<int:id_evento>/<int:id_docente>')
+def download_avaliacao(id_evento, id_docente):
+    # Consultar o banco de dados para obter os dados da avaliação com base nos IDs fornecidos
+    query = f"SELECT * FROM avaliacao WHERE id_evento = {id_evento} AND id_docente = {id_docente}"
+    df_avaliacao = pd.read_sql_query(query, conn)  # Certifique-se de ajustar a conexão com o banco de dados
+
+    # Criar um arquivo Excel temporário
+    excel_file = f'avaliacao_{id_evento}_{id_docente}.xlsx'
+    df_avaliacao.to_excel(excel_file, index=False)
+
+    # Enviar o arquivo Excel para download
+    return send_file(excel_file, as_attachment=True)
     
 @app.route('/desinscrever_evento/<int:avaliacao_id>', methods=['POST'])
 def desinscrever_evento(avaliacao_id):
