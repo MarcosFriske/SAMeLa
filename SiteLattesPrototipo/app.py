@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 from lxml import etree
 import chardet
 
+# script da pontuação
+from algoritmoPontuacaoBD import executar_algoritmo
+
 app = Flask(__name__)
 app.secret_key = 'SAMeLa'
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=10)
@@ -377,6 +380,15 @@ def inscrever_evento():
             flash('Você já está inscrito neste evento.', 'warning')
             return redirect(url_for('eventos'))
         else:
+            # Verificar se há um XML de Lattes associado ao servidor
+            cursor.execute('SELECT lattes_xml FROM servidores WHERE id_servidor = %s', (session['id'],))
+            lattes_xml_result = cursor.fetchone()
+            
+            if lattes_xml_result is None or lattes_xml_result[0] is None:
+                # Se não houver XML de Lattes, exibir mensagem de erro e redirecionar para eventos
+                flash('Não há XML de Lattes associado ao seu perfil. Insira seu XML de Lattes para participar da avaliação.', 'danger')
+                return redirect(url_for('eventos'))
+            
             # Lógica para criar a inscrição na tabela 'avaliacao'
             cursor.execute(
                 'SELECT localizacao FROM eventos WHERE id_evento = %s',
@@ -389,10 +401,37 @@ def inscrever_evento():
                 (localizacao_do_evento, session['id'], evento_id)
             )
             conn.commit()
-            flash('Inscrição realizada com sucesso!', 'success')
-
-            # Redirecionar para a página de avaliações após a inscrição
-            return redirect(url_for('avaliacoes'))
+            
+            cursor.execute(
+                'SELECT id_avaliacao FROM avaliacao WHERE fk_id_servidor = %s AND fk_id_evento = %s',
+                (session['id'], evento_id)
+            )
+            id_avaliacao_result = cursor.fetchone()
+            
+            if id_avaliacao_result is not None:
+                id_avaliacao = id_avaliacao_result[0]
+            else:
+                flash('Erro ao obter o ID da avaliação.', 'danger')
+                return redirect(url_for('eventos'))
+            
+            # Chamar a função para obter o DataFrame
+            df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=evento_id)
+    
+            # Verificar se o DataFrame é válido antes de continuar
+            if df_avaliacao is not None:
+                # Inserir os dados na tabela avaliacao_dados
+                for index, row in df_avaliacao.iterrows():
+                    cursor.execute(
+                        'INSERT INTO avaliacao_dados (fk_id_avaliacao, item, criterios, pontuacao_por_item, pontuacao_maxima, quantidade, pontuacao_atingida) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+                        (id_avaliacao, row['item'], row['criterios'], row['pontuacao_por_item'], row['pontuacao_maxima'], row['quantidade'], row['pontuacao_atingida'])
+                    )
+                conn.commit()
+            
+                flash('Inscrição realizada com sucesso!', 'success')
+                return redirect(url_for('avaliacoes'))
+            else:
+                flash('Erro ao gerar dados de avaliação.', 'danger')
+                return redirect(url_for('eventos'))
     
     return redirect(url_for('login'))
     
