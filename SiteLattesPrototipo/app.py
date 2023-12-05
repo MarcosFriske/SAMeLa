@@ -426,6 +426,21 @@ def inscrever_evento():
                         (id_avaliacao, row['item'], row['criterios'], row['pontuacao_por_item'], row['pontuacao_maxima'], row['quantidade'], row['pontuacao_atingida'])
                     )
                 conn.commit()
+                
+                # Somar os pontos_atingidos da tabela avaliacao_dados
+                cursor.execute(
+                    'SELECT SUM(pontuacao_atingida) FROM avaliacao_dados WHERE fk_id_avaliacao = %s',
+                    (id_avaliacao,)
+                )
+                soma_pontuacao_result = cursor.fetchone()
+                soma_pontuacao = soma_pontuacao_result[0] if soma_pontuacao_result[0] is not None else 0
+                
+                # Atualizar o campo pontuacao na tabela avaliacao
+                cursor.execute(
+                    'UPDATE avaliacao SET pontuacao = %s WHERE id_avaliacao = %s',
+                    (soma_pontuacao, id_avaliacao)
+                )
+                conn.commit()
             
                 flash('Inscrição realizada com sucesso!', 'success')
                 return redirect(url_for('avaliacoes'))
@@ -435,19 +450,47 @@ def inscrever_evento():
     
     return redirect(url_for('login'))
     
-@app.route('/ver_avaliacao/<int:evento_id>')
-def ver_avaliacao(evento_id):
-    # Lógica para recuperar e exibir a avaliação do Docente no evento
-    pass
+@app.route('/detalhes_avaliacao/<int:avaliacao_id>', methods=['GET'])
+def detalhes_avaliacao(avaliacao_id):
+    if 'loggedin' in session and session['role'] == 'Docente':
+        cursor = conn.cursor()
 
-@app.route('/download_avaliacao/<int:id_evento>/<int:id_docente>')
-def download_avaliacao(id_evento, id_docente):
+        # Consultar dados da avaliação
+        cursor.execute(
+            'SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = %s',
+            (avaliacao_id,)
+        )
+        dados_avaliacao = cursor.fetchall()
+        print("Dados da Avaliação:", dados_avaliacao)  # Adicione este print para debug
+
+        # Consultar IDs do docente e do evento associados à avaliação
+        cursor.execute(
+            'SELECT fk_id_servidor, id_avaliacao FROM avaliacao WHERE id_avaliacao = %s',
+            (avaliacao_id,)
+        )
+        result = cursor.fetchone()
+
+        # Verificar se o resultado não é nulo
+        if result:
+            id_docente, id_avaliacao = result
+            print("ID do Docente:", id_docente)  # Adicione este print para debug
+            print("ID do Avaliacao:", id_avaliacao)    # Adicione este print para debug
+            return render_template('avaliacao_dados.html', dados_avaliacao=dados_avaliacao, id_avaliacao=id_avaliacao, id_docente=id_docente)
+        else:
+            # Lidar com a situação em que os IDs não foram encontrados
+            flash('IDs do docente e/ou do evento não encontrados para a avaliação.')
+            return redirect(url_for('alguma_pagina_de_erro'))
+
+    return redirect(url_for('login'))
+
+@app.route('/download_avaliacao/<int:id_avaliacao>/<int:id_docente>')
+def download_avaliacao(id_avaliacao, id_docente):
     # Consultar o banco de dados para obter os dados da avaliação com base nos IDs fornecidos
-    query = f"SELECT * FROM avaliacao WHERE id_evento = {id_evento} AND id_docente = {id_docente}"
+    query = f"SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = {id_avaliacao}"
     df_avaliacao = pd.read_sql_query(query, conn)  # Certifique-se de ajustar a conexão com o banco de dados
 
     # Criar um arquivo Excel temporário
-    excel_file = f'avaliacao_{id_evento}_{id_docente}.xlsx'
+    excel_file = f'avaliacao_{id_avaliacao}_{id_docente}.xlsx'
     df_avaliacao.to_excel(excel_file, index=False)
 
     # Enviar o arquivo Excel para download
@@ -456,8 +499,9 @@ def download_avaliacao(id_evento, id_docente):
 @app.route('/desinscrever_evento/<int:avaliacao_id>', methods=['POST'])
 def desinscrever_evento(avaliacao_id):
     if 'loggedin' in session and session['role'] == 'Docente':
-        # Lógica para verificar se o Docente está inscrito no evento
         cursor = conn.cursor()
+
+        # Verificar se o Docente está inscrito no evento
         cursor.execute(
             'SELECT * FROM avaliacao WHERE id_avaliacao = %s AND fk_id_servidor = %s',
             (avaliacao_id, session['id'])
@@ -465,12 +509,15 @@ def desinscrever_evento(avaliacao_id):
         inscricao_existente = cursor.fetchone()
 
         if inscricao_existente:
-            # Lógica para remover a inscrição na tabela 'avaliacao'
+            # Antes de excluir a avaliação, precisamos excluir os dados correspondentes na tabela avaliacao_dados
+            cursor.execute('DELETE FROM avaliacao_dados WHERE fk_id_avaliacao = %s', (avaliacao_id,))
+            
+            # Agora podemos excluir a inscrição na tabela 'avaliacao'
             cursor.execute('DELETE FROM avaliacao WHERE id_avaliacao = %s', (avaliacao_id,))
+            
             conn.commit()
             flash('Desinscrição realizada com sucesso!', 'success')
         else:
-            # O Docente não está inscrito no evento
             flash('Você não está inscrito neste evento.', 'warning')
 
         # Redirecionar para a página de avaliações após a desinscrição

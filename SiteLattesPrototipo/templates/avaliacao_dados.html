@@ -1,0 +1,41 @@
+<!-- templates/avaliacao_dados.html -->
+
+{% extends 'layout.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Detalhes da Avaliação</h1>
+
+        {% if dados_avaliacao %}
+            <table class="table mt-3">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Critérios</th>
+                        <th>Pontuação por Item</th>
+                        <th>Pontuação Máxima</th>
+                        <th>Quantidade</th>
+                        <th>Pontuação Atingida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dado in dados_avaliacao %}
+                        <tr>
+                            <td>{{ dado[2] }}</td>
+                            <td>{{ dado[3] }}</td>
+                            <td>{{ dado[4] }}</td>
+                            <td>{{ dado[5] }}</td>
+                            <td>{{ dado[6] }}</td>
+                            <td class="fw-bold text-success">{{ dado[7] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Botão para Download do Excel -->
+            <a href="{{ url_for('download_avaliacao', id_avaliacao=id_avaliacao, id_docente=id_docente) }}" class="btn btn-primary">Download Excel</a>
+        {% else %}
+            <p>Nenhum dado de avaliação disponível.</p>
+        {% endif %}
+    </div>
+{% endblock %}
