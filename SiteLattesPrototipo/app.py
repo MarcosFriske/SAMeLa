@@ -414,8 +414,20 @@ def inscrever_evento():
                 flash('Erro ao obter o ID da avaliação.', 'danger')
                 return redirect(url_for('eventos'))
             
+            cursor.execute(
+                'SELECT fk_id_instrumento_avaliacao FROM eventos WHERE id_evento = %s',
+                (evento_id)
+            )
+            id_instrumento_avaliacao_result = cursor.fetchone()
+            
+            if id_instrumento_avaliacao_result is not None:
+                instrumento_avaliacao_id = str(id_instrumento_avaliacao_result[0])
+            else:
+                flash('Erro ao obter o ID do instrumento de avaliação.', 'danger')
+                return redirect(url_for('eventos'))
+            
             # Chamar a função para obter o DataFrame
-            df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=evento_id)
+            df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=instrumento_avaliacao_id)
     
             # Verificar se o DataFrame é válido antes de continuar
             if df_avaliacao is not None:

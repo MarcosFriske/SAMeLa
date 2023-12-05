@@ -356,9 +356,8 @@ def executar_algoritmo(id_servidor, instrumento_avaliacao_id):
                             valor = row['pontuacao_item']*row['qtd_maxima_itens']
                         df_avaliacao.loc[next_row] = [index, row['criterio'], row['pontuacao_item'], (row['pontuacao_item']*row['qtd_maxima_itens']), contagem_artigos_com_qualis, valor] 
                     
-    # após preencher o dataframe df_avaliacao
-    
-    return df_avaliacao
+        # após preencher o dataframe df_avaliacao
+        return df_avaliacao
     
     if df_criterios_avaliacao is None:
         print(f"Não foi possível encontrar o instrumento de avaliação associado ao ID: {instrumento_avaliacao_id} informado.")
