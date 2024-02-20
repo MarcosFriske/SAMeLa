@@ -42,7 +42,7 @@ def login():
     if 'matricula' in request.cookies:
         matricula = request.cookies.get('matricula')
         password = request.cookies.get('senha')
-        # Check if account exists using MySQL
+        # Check if account exists using SQL query
         cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
         # Fetch one record and return result
         account = cursor.fetchone()

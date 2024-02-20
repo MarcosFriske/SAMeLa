@@ -1,0 +1,30 @@
+tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA
+
+descrição do sistema e tela de login reutilizar
+
+permitir login com e-mail também
+
+criar tela de critérios, e criar tela de associação de critérios
+
+tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia.
+
+planilha de resultados - utilizar template de excel, para manter no padrão da planilha de avaliação, relatório pdf protegido baseado no cabeçalho e dados do anexo
+
+Gerar lista de todos inscritos no evento e pontuação para administrador
+
+Atualizar tabela eventos, com data inicio e fim inscrição evento
+
+botão desescrever evento, alterar para lixeira
+
+Cadastro de servidores via administrador, botar role, admin, docente, etc
+
+Permitir atualização de tipos no banco de dados, tipo evento e tipo servidor - alter type
+
+Perfil Administrador e Docente, adicionar perfil coordenador - Coordenador de pesquisa, poder trabalhar com os users, avaliação em lote, inserir matricula servidor, 
+escolhendo servidor, e adicionar o servidor, buscar matricula ou email, se tiver aparece para selecionar carregar dados editar e deixar só atualizar lattes, se não 
+existir permitir cadastrar o servidor.
+
+Permitir trocar senha usuário.
+
+Mandar e-mail, avisando da criação da conta com senha temporária para acessar e necessidade de atualizar a senha. 
+
