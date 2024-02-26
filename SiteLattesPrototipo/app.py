@@ -222,20 +222,38 @@ def forgot_password():
 # Rota para a página de redefinição de senha
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    # Aqui, você deve verificar se o token é válido (verificar no banco de dados)
-    # Se o token for válido, permita que o usuário redefina a senha
-    # Aqui, por simplicidade, apenas verificamos se o token está presente no dicionário temporário
-    temp_data = {'email': 'user@example.com', 'token': 'example_token'}
-    if token != temp_data['token']:
-        flash('Link inválido ou expirado', 'error')
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    
+    # Verifica se o token corresponde a um usuário
+    cursor.execute('SELECT * FROM servidores WHERE reset_token = %s', (token,))
+    user = cursor.fetchone()
+
+    if user:
+        if request.method == 'POST':
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+
+            # Verifica se as senhas coincidem
+            if new_password == confirm_password:
+                # Hash da nova senha
+                hashed_password = generate_password_hash(new_password, method='sha256')
+
+                # Atualiza a senha no banco de dados
+                cursor.execute("UPDATE servidores SET password = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
+
+                # Limpa o reset_token
+                cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
+                conn.commit()
+
+                flash('Senha redefinida com sucesso.', 'alert-success')
+                return redirect(url_for('login'))
+            else:
+                flash('As senhas não coincidem. Tente novamente.', 'alert-danger')
+
+        return render_template('reset_password.html', token=token)
+    else:
+        flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'alert-danger')
         return redirect(url_for('forgot_password'))
-
-    if request.method == 'POST':
-        # Aqui, você deve atualizar a senha do usuário no banco de dados
-        flash('Senha redefinida com sucesso', 'success')
-        return redirect(url_for('login'))
-
-    return render_template('reset_password.html')
 
 @app.route('/upload_xml', methods=['POST'])
 def upload_xml():
