@@ -1,4 +1,4 @@
-tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA
+tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA - parcial, faltou a foto
 
 descrição do sistema e tela de login reutilizar
 

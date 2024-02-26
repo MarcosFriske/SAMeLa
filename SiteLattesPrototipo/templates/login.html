@@ -1,43 +1,51 @@
-//templates/login.html
 <!DOCTYPE html>
-<html>
- <head>
-  <meta charset="utf-8">
-  <title>Login</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
-  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
- </head>
- <body style="background-color:#ccc;">
-  <div class="login-box" >
-  <div class="login-header">Login</div>
-  <div class="login-body">
-    <p>Por favor, informe sua matricula e senha</p>
-    <form class="form-group" action="{{ url_for('login') }}" method="post">
-        <label>Matricula</label>
-        <input type="text" class="form-control" name="matricula" value="{% if 'matricula' in request.cookies %} {{ request.cookies.get('matricula') }} {% endif %}" placeholder="Número de matricula" id="matricula" required>
-        <label>Senha</label>
-        <input type="password" class="form-control" name="password" value="{% if 'password' in request.cookies %} {{ request.cookies.get('password') }} {% endif %}" placeholder="Senha" id="password" required>
-        <input type="checkbox" value="checked" name="remember" checked="{% if 'remember' in request.cookies %} {{ request.cookies.get('remember') }} {% endif %}" id="remember"><b> Lembre-me</b>
-        <input type="submit" value="Login" class="form-control btn btn-success " name="">
-    </form>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-dismissible fade show {{ category }}" role="alert">
-        {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
-            <span aria-hidden="true">×</span>
-        </button>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+</head>
+<body>
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='images/Logo_IFC_horizontal_Camboriu.png') }}" alt="IFC Camboriú Logo" class="logo-ifc">
+        <img src="{{ url_for('static', filename='images/geati1.png') }}" alt="GEATI Logo" class="logo-geati">
     </div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
-    <p>Não possuo conta <a href="{{ url_for('register') }}">Registrar</a></p>
-  </div>
- </div>
- <!-- Scripts do Bootstrap e do jQuery -->
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
- </body>
+    <div class="login-box">
+        <div class="login-header">SAMeLa</div>
+        <div class="login-body">
+            <p>Por favor, informe sua matrícula/e-mail e senha</p>
+            <form class="form-group" action="{{ url_for('login') }}" method="post">
+                <label for="matricula">Matrícula OU E-mail</label>
+                <input type="text" class="form-control" name="matricula" value="{% if 'matricula' in request.cookies %} {{ request.cookies.get('matricula') }} {% endif %}" placeholder="Número de matrícula OU E-mail" id="matricula" required>
+                <label for="password">Senha</label>
+                <input type="password" class="form-control" name="password" value="{% if 'password' in request.cookies %} {{ request.cookies.get('password') }} {% endif %}" placeholder="Senha" id="password" required>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" value="checked" name="remember" checked="{% if 'remember' in request.cookies %} {{ request.cookies.get('remember') }} {% endif %}" id="remember">
+                    <label class="form-check-label" for="remember">Lembre-me</label>
+                </div>
+                <button type="submit" class="btn btn-primary custom-button">Login</button>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-dismissible fade show {{ category }}" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <p>Não possui conta? <a href="{{ url_for('register') }}">Registre-se aqui</a></p>
+            <p class="login-link"><a href="{{ url_for('forgot_password') }}">Esqueci minha senha</a></p>
+        </div>
+    </div>
+    <!-- Scripts do Bootstrap e do jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+</body>
 </html>

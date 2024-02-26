@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 from lxml import etree
 import chardet
 
+#reset senha
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import random
+import string
+
 # script da pontuação
 from algoritmoPontuacaoBD import executar_algoritmo
 
@@ -24,7 +31,40 @@ DB_USER = "postgres"
 DB_PASS = "admin"
  
 conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
- 
+
+### FUNÇÕES
+
+# Função para gerar tokens aleatórios para redefinição de senha
+def generate_token():
+    return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
+
+# Função de envio do e-mail para resetar senha
+def send_password_reset_email(receiver_email, token):
+    sender_email = 'seu_email@gmail.com'  # Insira seu endereço de e-mail aqui
+    sender_password = 'senha'  # Insira sua senha aqui
+
+    subject = "SAMeLa - Redefinição de Senha"
+    body = f"Para redefinir sua senha, clique no link a seguir:\n\nhttp://127.0.0.1:5000/reset_password/{token}"
+
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            text = message.as_string()
+            server.sendmail(sender_email, receiver_email, text)
+        print("E-mail enviado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+
+
+### ROTAS
+
 @app.route('/')
 def home():
     # Check if user is loggedin
@@ -43,7 +83,7 @@ def login():
         matricula = request.cookies.get('matricula')
         password = request.cookies.get('senha')
         # Check if account exists using SQL query
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
+        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
         # Fetch one record and return result
         account = cursor.fetchone()
         
@@ -76,7 +116,7 @@ def login():
         print(password)
          
         # Check if account exists using MySQL
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
+        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
         # Fetch one record and return result
         account = cursor.fetchone()
         
@@ -126,7 +166,7 @@ def register():
         _hashed_password = generate_password_hash(password)
  
         #Check if account exists using MySQL
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s', (matricula,))
+        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
         account = cursor.fetchone()
         print(account)
         # If account exists show error and validation checks
@@ -152,6 +192,50 @@ def register():
     # Show registration form with message (if any)
     return render_template('register.html')
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+
+        cursor.execute('SELECT * FROM servidores WHERE e_mail = %s', (email,))
+        user = cursor.fetchone()
+
+        if user:
+            token = generate_token()
+
+            # Armazena o token no banco de dados
+            cursor.execute("UPDATE servidores SET reset_token = %s WHERE id_servidor = %s", (token, user['id_servidor']))
+            conn.commit()
+
+            # Envia e-mail com o token para redefinição de senha
+            send_password_reset_email(email, token)
+
+            flash('Um e-mail foi enviado com instruções para redefinir sua senha.', 'alert-success')
+            return redirect(url_for('login'))
+        else:
+            flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'alert-warning')
+
+    return render_template('forgot_password.html')
+
+# Rota para a página de redefinição de senha
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    # Aqui, você deve verificar se o token é válido (verificar no banco de dados)
+    # Se o token for válido, permita que o usuário redefina a senha
+    # Aqui, por simplicidade, apenas verificamos se o token está presente no dicionário temporário
+    temp_data = {'email': 'user@example.com', 'token': 'example_token'}
+    if token != temp_data['token']:
+        flash('Link inválido ou expirado', 'error')
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        # Aqui, você deve atualizar a senha do usuário no banco de dados
+        flash('Senha redefinida com sucesso', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('reset_password.html')
 
 @app.route('/upload_xml', methods=['POST'])
 def upload_xml():

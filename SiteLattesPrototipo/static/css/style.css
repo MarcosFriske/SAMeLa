@@ -1,144 +1,269 @@
-//static/css/style.css
-body {
-  background-color: #435165;
-  margin: 0;
+/* Adicionando espaçamento entre os elementos na tela de login */
+.form-group {
+   margin-bottom: 30px;
 }
 
-.login-box
- {
-  height: 50%;
-  width: 30%;
-  border: 1px solid grey;
-  margin-left: 35%;
-  margin-top: 10%;
-  position: relative;
-       box-shadow: 21px 12px 24px 10px rgba(0, 0, 0, .5);
-       background: #dadada;
- }
- .login-header
- {
-  text-align: center;
-  font-family: "vardhana",cursive;
-  font-size: 35px;
-  background: linear-gradient(to bottom, #00bfff 0%, #5b6d7c 100%);
-  color:#fff;
-  position: relative;
-       box-shadow: 1px 3px 14px  rgba(0, 0, 0, .5);
- }
- .login-body
- {
-  padding: 20px;
-  line-height: 2;
- }
-.msg {
-color: #721c24;
-   background-color: #f8d7da;
-   border-color: #f5c6cb;
-padding: .75rem 1.25rem;
-   margin-bottom: 1rem;
-   border: 1px solid transparent;
-   border-radius: .25rem;
-}  
-.main{
- margin-top:50px;
+input[type="checkbox"] {
+   margin-right: 10px;
+   margin-bottom: 15px; /* Aumentando o espaçamento abaixo da checkbox */
 }
- 
-h1.title { 
-font-size: 50px;
-font-family: 'Passion One', cursive; 
-font-weight: 400; 
+
+/* Estilos específicos para a página de registro */
+body.register-page {
+   background-color: #ffffff;
 }
- 
-hr{
-width: 10%;
-color: #fff;
-}
- 
-.form-group{
-margin-bottom: 15px;
-}
- 
-label{
-margin-bottom: 15px;
-}
- 
-input,
-input::-webkit-input-placeholder {
-   font-size: 11px;
-   padding-top: 3px;
-}
- 
-.main-login{
- background-color: #fff;
-   /* shadows and rounded borders */
+
+.register-page .main-login,
+.register-page .main-center {
+   background-color: #ffffff; /* Cor de fundo ajustada para corresponder à cor da página principal */
    -moz-border-radius: 2px;
    -webkit-border-radius: 2px;
    border-radius: 2px;
    -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
    -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
- 
-}
-.form-control {
-   height: auto!important;
-padding: 8px 12px !important;
-}
-.input-group {
-   -webkit-box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.21)!important;
-   -moz-box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.21)!important;
-   box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.21)!important;
-}
-.main-center{
- margin-top: 30px;
- margin: 0 auto;
- max-width: 400px;
+   margin-top: 50px;
+   max-width: 400px;
+   margin: 0 auto;
    padding: 10px 40px;
-background:#5b6d7c;
-    color: #FFF;
+   color: #007bff; /* Cor do texto ajustada */
    text-shadow: none;
--webkit-box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.31);
--moz-box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.31);
-box-shadow: 0px 3px 5px 0px rgba(0,0,0,0.31);
- 
+   -webkit-box-shadow: 0px 3px 5px 0px rgba(0, 0, 0, 0.31);
+   -moz-box-shadow: 0px 3px 5px 0px rgba(0, 0, 0, 0.31);
+   box-shadow: 0px 3px 5px 0px rgba(0, 0, 0, 0.31);
 }
-span.input-group-addon i {
-   color: #fff;
-   font-size: 17px;padding:10px;
+
+.register-page .form-group {
+   margin-bottom: 30px;
 }
- 
-.login-button{
-margin-top: 5px;
+
+.register-page .form-control {
+   height: auto!important;
+   padding: 8px 12px !important;
+   margin-bottom: 15px;
+   position: relative; /* Adicionado para alinhar ícones */
+   border: 1px solid #ced4da; /* Adicionado para borda suave */
+   border-radius: 4px; /* Adicionado para bordas suaves */
 }
- 
-.login-register{
-font-size: 11px;
-text-align: center;
+
+.register-page .input-group {
+   -webkit-box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.21)!important;
+   -moz-box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.21)!important;
+   box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.21)!important;
+   border-radius: 4px; /* Adicionado para bordas suaves */
 }
- 
-.site-header {
+
+.register-page .site-header {
    background-color: rgba(0, 0, 0, .85);
    -webkit-backdrop-filter: saturate(180%) blur(20px);
    backdrop-filter: saturate(180%) blur(20px);
 }
-.site-header a { 
-color:#fff;
+
+.register-page .site-header a {
+   color: #fff;
+}
+
+.register-page .logo-container {
+   text-align: center;
+   margin-top: 20px;
+}
+
+.register-page .logo-ifc, 
+.register-page .logo-geati {
+   max-width: 100%;
+   height: auto;
+   display: inline-block;
+   margin: 10px;
+   border-radius: 4px; /* Adicionado para bordas suaves */
+}
+
+.register-page .logo-ifc {
+   max-width: 80%;
+}
+
+.register-page .logo-geati {
+   max-width: 20%;
+}
+
+.register-page .btn-primary {
+   font-size: 18px;
+   width: 100%;
+   padding: 12px;
+   box-sizing: border-box;
+   background-color: #007bff;
+   color: #fff;
+   border: none;
+   border-radius: 4px;
+   cursor: pointer;
+   transition: background-color 0.3s;
+   margin-top: 15px;
+}
+
+.register-page .btn-primary:hover {
+   background-color: #0056b3;
+}
+
+.site-header {
+    background-color: rgba(0, 0, 0, .85);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+}
+
+.site-header a {
+    color: #fff;
 }
 
 .custom-file-input::-webkit-file-upload-button {
-   visibility: hidden;
+    visibility: hidden;
 }
+
 .custom-file-input::before {
-   content: 'Procurar...';
-   display: inline-block;
-   background: linear-gradient(top, #f9f9f9, #e3e3e3);
-   border: 1px solid #999;
-   border-radius: 3px;
-   padding: 5px 8px;
-   outline: none;
-   white-space: nowrap;
-   -webkit-user-select: none;
-   cursor: pointer;
-   text-shadow: 1px 1px #fff;
-   font-weight: 700;
-   font-size: 10pt;
+    content: 'Procurar...';
+    display: inline-block;
+    background: linear-gradient(top, #f9f9f9, #e3e3e3);
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 5px 8px;
+    outline: none;
+    white-space: nowrap;
+    -webkit-user-select: none;
+    cursor: pointer;
+    text-shadow: 1px 1px #fff;
+    font-weight: 700;
+    font-size: 10pt;
+}
+
+/* static/css/style.css */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Arial', sans-serif;
+}
+
+.login-box,
+.forgot-password-box {
+    max-width: 400px;
+    margin: auto;
+    padding: 30px;
+    background: #fff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    position: relative;
+    margin-top: 80px;
+}
+
+.login-header,
+.forgot-password-header {
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.login-body,
+.forgot-password-body {
+    margin-top: 30px;
+}
+
+label {
+    font-size: 18px;
+    color: #555;
+    display: block; /* Para evitar comportamento inesperado */
+}
+
+input,
+input::-webkit-input-placeholder {
+    font-size: 16px;
+    padding: 12px;
+    box-sizing: border-box;
+    margin-top: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.3s;
+}
+
+input:focus {
+    border-color: #007bff;
+}
+
+.custom-button,
+.btn-primary {
+    font-size: 18px;
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 15px;
+}
+
+button:hover,
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.instruction-message {
+    font-size: 16px;
+    color: #555;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #007bff;
+}
+
+.login-link a {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+.logo-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.logo-ifc,
+.logo-geati {
+    max-width: 100%;
+    height: auto;
+    display: inline-block;
+    margin: 10px;
+}
+
+.logo-ifc {
+    max-width: 80%; /* Ajuste a largura conforme necessário */
+}
+
+.logo-geati {
+    max-width: 20%; /* Ajuste a largura conforme necessário */
+}
+
+/* Ajustando o estilo do botão de registro */
+.btn-primary {
+    font-size: 18px;
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 15px;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
 }
