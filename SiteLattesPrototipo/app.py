@@ -40,8 +40,8 @@ def generate_token():
 
 # Função de envio do e-mail para resetar senha
 def send_password_reset_email(receiver_email, token):
-    sender_email = 'seu_email@gmail.com'  # Insira seu endereço de e-mail aqui
-    sender_password = 'senha'  # Insira sua senha aqui
+    sender_email = 'email@gmail.com'  # Insira seu endereço de e-mail aqui
+    sender_password = 'chave de acesso app'  # Insira chave de acesso app - autenticação 2 etapas
 
     subject = "SAMeLa - Redefinição de Senha"
     body = f"Para redefinir sua senha, clique no link a seguir:\n\nhttp://127.0.0.1:5000/reset_password/{token}"
@@ -216,6 +216,7 @@ def forgot_password():
             return redirect(url_for('login'))
         else:
             flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'alert-warning')
+            return redirect(url_for('login'))  # Adicionando o redirecionamento para a página de login
 
     return render_template('forgot_password.html')
 
@@ -239,7 +240,7 @@ def reset_password(token):
                 hashed_password = generate_password_hash(new_password, method='sha256')
 
                 # Atualiza a senha no banco de dados
-                cursor.execute("UPDATE servidores SET password = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
+                cursor.execute("UPDATE servidores SET senha = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
 
                 # Limpa o reset_token
                 cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
