@@ -40,8 +40,8 @@ def generate_token():
 
 # Função de envio do e-mail para resetar senha
 def send_password_reset_email(receiver_email, token):
-    sender_email = 'email@gmail.com'  # Insira seu endereço de e-mail aqui
-    sender_password = 'chave de acesso app'  # Insira chave de acesso app - autenticação 2 etapas
+    sender_email = 'geati.ifc@gmail.com'  # Insira seu endereço de e-mail aqui
+    sender_password = 'fthi rjrw kpop vmfq'  # Insira chave de acesso app - autenticação 2 etapas
 
     subject = "SAMeLa - Redefinição de Senha"
     body = f"Para redefinir sua senha, clique no link a seguir:\n\nhttp://127.0.0.1:5000/reset_password/{token}"

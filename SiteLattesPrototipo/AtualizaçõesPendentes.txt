@@ -28,3 +28,5 @@ Permitir trocar senha usuário.
 
 Mandar e-mail, avisando da criação da conta com senha temporária para acessar e necessidade de atualizar a senha. 
 
+Imagem na esquerda e quadro de avisos na direita da pagina de login
+
