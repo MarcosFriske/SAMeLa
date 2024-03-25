@@ -1,8 +1,8 @@
-tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA - parcial, faltou a foto
+tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA - feito
 
 descrição do sistema e tela de login reutilizar
 
-permitir login com e-mail também
+permitir login com e-mail também - feito
 
 criar tela de critérios, e criar tela de associação de critérios
 
