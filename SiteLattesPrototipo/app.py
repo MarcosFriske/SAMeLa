@@ -736,8 +736,9 @@ def criterios():
         # Calcular o offset para a paginação
         offset = (pagina - 1) * itens_por_pagina
 
-        # Filtro por instrumento de avaliação
+        # Verificar se existe um filtro de instrumento
         if filtro_instrumento:
+            # Filtrar critérios por instrumento de avaliação
             cursor.execute("""
                 SELECT * FROM criterios
                 WHERE fk_id_instrumento_avaliacao = %s
@@ -749,7 +750,16 @@ def criterios():
                 SELECT COUNT(*) FROM criterios
                 WHERE fk_id_instrumento_avaliacao = %s
             """, (filtro_instrumento,))
+            
+            # Buscar o instrumento selecionado
+            cursor.execute("""
+                SELECT * FROM instrumentos_avaliacao
+                WHERE id_instrumento_avaliacao = %s
+            """, (filtro_instrumento,))
+            instrumento_selecionado = cursor.fetchone()
+
         else:
+            # Caso não tenha filtro, buscar todos os critérios
             cursor.execute("""
                 SELECT * FROM criterios
                 LIMIT %s OFFSET %s
@@ -759,6 +769,7 @@ def criterios():
             cursor.execute("""
                 SELECT COUNT(*) FROM criterios
             """)
+            instrumento_selecionado = None  # Nenhum instrumento foi selecionado
 
         # Verificação da contagem
         count_result = cursor.fetchone()
@@ -776,11 +787,12 @@ def criterios():
 
         return render_template('criterios.html', criterios=criterios, instrumentos=instrumentos,
                                pagina=pagina, total_paginas=total_paginas,
-                               filtro_instrumento=filtro_instrumento, itens_por_pagina=itens_por_pagina,
+                               filtro_instrumento=filtro_instrumento, 
+                               instrumento_selecionado=instrumento_selecionado,
+                               itens_por_pagina=itens_por_pagina,
                                user_role=session['role'])
     else:
         return redirect(url_for('login'))
-
 
 
 @app.route('/criar_criterio', methods=['GET', 'POST'])

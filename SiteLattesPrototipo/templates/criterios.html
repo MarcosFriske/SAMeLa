@@ -4,7 +4,14 @@
 
 {% block content %}
     <div class="container-fluid">
-        <h2>Critérios de Avaliação Disponíveis</h2>
+        <h2>
+            Critérios de Avaliação Disponíveis
+            {% if filtro_instrumento %}
+                para {{ instrumento_selecionado.nome }}
+            {% else %}
+                (Todos)
+            {% endif %}
+        </h2>
 
         <!-- Filtro por Instrumento de Avaliação -->
         <form method="get" action="/criterios">
@@ -30,37 +37,46 @@
             <button type="submit" class="btn btn-primary">Filtrar</button>
         </form>
 
-        <table class="table mt-3">
-            <tr>
-                <th>ID</th>
-                <th>Critério</th>
-                <th>Quantidade Máxima de Itens</th>
-                <th>Pontuação por Item</th>
-                <th>XPath</th>
-                <th>Considera Qualis</th>
-                <th>Ativo</th>
-                {% if user_role == 'Administrador' %}
-                <th>Editar</th>
-                <th>Remover</th>
-                {% endif %}
-            </tr>
-            {% for criterio in criterios %}
-            <tr>
-                <td>{{ criterio.id_criterio }}</td>
-                <td>{{ criterio.criterio }}</td>
-                <td>{{ criterio.qtd_maxima_itens }}</td>
-                <td>{{ criterio.pontuacao_item }}</td>
-                <td>{{ criterio.xpath_criterio_lattes }}</td>
-                <td>{{ criterio.considera_qualis }}</td>
-                <td>{{ criterio.ativo }}</td>
-                {% if user_role == 'Administrador' %}
-                <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
-                <td><a href="#" onclick="removerCriterio('{{ criterio.id_criterio }}')" class="btn btn-danger btn-sm">Remover</a></td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </table>
+        <!-- Mensagem quando não há critérios -->
+        {% if criterios|length == 0 %}
+            <div class="alert alert-warning mt-3">
+                <p>Não há critérios associados a este instrumento de avaliação atualmente.</p>
+                <p>Você pode criar um novo critério utilizando o botão abaixo.</p>
+            </div>
+        {% else %}
+            <table class="table mt-3">
+                <tr>
+                    <th>ID</th>
+                    <th>Critério</th>
+                    <th>Quantidade Máxima de Itens</th>
+                    <th>Pontuação por Item</th>
+                    <th>XPath</th>
+                    <th>Considera Qualis</th>
+                    <th>Ativo</th>
+                    {% if user_role == 'Administrador' %}
+                    <th>Editar</th>
+                    <th>Remover</th>
+                    {% endif %}
+                </tr>
+                {% for criterio in criterios %}
+                <tr>
+                    <td>{{ criterio.id_criterio }}</td>
+                    <td>{{ criterio.criterio }}</td>
+                    <td>{{ criterio.qtd_maxima_itens }}</td>
+                    <td>{{ criterio.pontuacao_item }}</td>
+                    <td>{{ criterio.xpath_criterio_lattes }}</td>
+                    <td>{{ criterio.considera_qualis }}</td>
+                    <td>{{ criterio.ativo }}</td>
+                    {% if user_role == 'Administrador' %}
+                    <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
+                    <td><a href="#" onclick="removerCriterio('{{ criterio.id_criterio }}')" class="btn btn-danger btn-sm">Remover</a></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
 
+        <!-- Paginação -->
         <ul class="pagination">
             {% if pagina > 1 %}
             <li class="page-item">
@@ -74,13 +90,19 @@
             {% endfor %}
             {% if pagina < total_paginas %}
             <li class="page-item">
-                <a class="page-link" href="?pagina={{ pagina + 1 }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">Próximo</a>
+                <a class="page-link" href="?pagina={{ pagina + 1 }}&instrumento_filtro={{ itens_por_pagina }}">Próximo</a>
             </li>
             {% endif %}
-        </ul>        
+        </ul>
 
+        <!-- Botões de Ação para Adicionar e Associar Critérios -->
         {% if user_role == 'Administrador' %}
-        <a href="/criar_criterio" class="btn btn-primary mt-3">Adicionar Novo Critério</a>
+        <div class="mt-3 d-flex justify-content-between">
+            <a href="/criar_criterio" class="btn btn-primary">Adicionar Novo Critério</a>
+            {% if filtro_instrumento %}
+            <a href="/associar_criterio?instrumento={{ filtro_instrumento }}" class="btn btn-secondary">Associar Critério Existente</a>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
 
