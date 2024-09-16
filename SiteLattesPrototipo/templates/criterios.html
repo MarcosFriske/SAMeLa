@@ -1,0 +1,106 @@
+{% extends 'layout.html' %}
+
+{% block title %}Critérios de Avaliação{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <h2>Critérios de Avaliação Disponíveis</h2>
+
+        <!-- Filtro por Instrumento de Avaliação -->
+        <form method="get" action="/criterios">
+            <div class="form-group">
+                <label for="instrumento_filtro">Filtrar por Instrumento de Avaliação:</label>
+                <select id="instrumento_filtro" name="instrumento_filtro" class="form-control">
+                    <option value="">Todos</option>
+                    {% for instrumento in instrumentos %}
+                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if instrumento.id_instrumento_avaliacao == filtro_instrumento %}selected{% endif %}>{{ instrumento.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="itens_por_pagina">Itens por Página:</label>
+                <select id="itens_por_pagina" name="itens_por_pagina" class="form-control">
+                    <option value="5" {% if itens_por_pagina == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if itens_por_pagina == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if itens_por_pagina == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if itens_por_pagina == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if itens_por_pagina == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+
+        <table class="table mt-3">
+            <tr>
+                <th>ID</th>
+                <th>Critério</th>
+                <th>Quantidade Máxima de Itens</th>
+                <th>Pontuação por Item</th>
+                <th>XPath</th>
+                <th>Considera Qualis</th>
+                <th>Ativo</th>
+                {% if user_role == 'Administrador' %}
+                <th>Editar</th>
+                <th>Remover</th>
+                {% endif %}
+            </tr>
+            {% for criterio in criterios %}
+            <tr>
+                <td>{{ criterio.id_criterio }}</td>
+                <td>{{ criterio.criterio }}</td>
+                <td>{{ criterio.qtd_maxima_itens }}</td>
+                <td>{{ criterio.pontuacao_item }}</td>
+                <td>{{ criterio.xpath_criterio_lattes }}</td>
+                <td>{{ criterio.considera_qualis }}</td>
+                <td>{{ criterio.ativo }}</td>
+                {% if user_role == 'Administrador' %}
+                <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
+                <td><a href="#" onclick="removerCriterio('{{ criterio.id_criterio }}')" class="btn btn-danger btn-sm">Remover</a></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+
+        <ul class="pagination">
+            {% if pagina > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="?pagina={{ pagina - 1 }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">Anterior</a>
+            </li>
+            {% endif %}
+            {% for p in range(1, total_paginas + 1) %}
+            <li class="page-item {% if p == pagina %}active{% endif %}">
+                <a class="page-link" href="?pagina={{ p }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            {% if pagina < total_paginas %}
+            <li class="page-item">
+                <a class="page-link" href="?pagina={{ pagina + 1 }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">Próximo</a>
+            </li>
+            {% endif %}
+        </ul>        
+
+        {% if user_role == 'Administrador' %}
+        <a href="/criar_criterio" class="btn btn-primary mt-3">Adicionar Novo Critério</a>
+        {% endif %}
+    </div>
+
+    <script>
+        function removerCriterio(criterio_id) {
+            if (confirm("Tem certeza de que deseja remover este critério?")) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/remover_criterio/' + criterio_id;
+    
+                const hiddenField = document.createElement('input');
+                hiddenField.type = 'hidden';
+                hiddenField.name = 'criterio_id';
+                hiddenField.value = criterio_id;
+    
+                form.appendChild(hiddenField);
+    
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}

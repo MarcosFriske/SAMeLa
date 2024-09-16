@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+
+{% block title %}Criar Critério{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h2>Criar Novo Critério</h2>
+        <form method="post" action="/criar_criterio">
+            <div class="form-group">
+                <label for="criterio">Critério:</label>
+                <input type="text" id="criterio" name="criterio" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="qtd_maxima_itens">Quantidade Máxima de Itens:</label>
+                <input type="number" id="qtd_maxima_itens" name="qtd_maxima_itens" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="pontuacao_item">Pontuação por Item:</label>
+                <input type="number" step="0.01" id="pontuacao_item" name="pontuacao_item" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="xpath_criterio_lattes">XPath do Critério:</label>
+                <input type="text" id="xpath_criterio_lattes" name="xpath_criterio_lattes" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="considera_qualis">Considera Qualis:</label>
+                <input type="checkbox" id="considera_qualis" name="considera_qualis">
+            </div>
+
+            <div class="form-group">
+                <label for="fk_id_instrumento_avaliacao">Instrumento de Avaliação:</label>
+                <select id="fk_id_instrumento_avaliacao" name="fk_id_instrumento_avaliacao" class="form-control" required>
+                    {% for instrumento in instrumentos %}
+                    <option value="{{ instrumento.id_instrumento_avaliacao }}">{{ instrumento.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="ativo">Ativo:</label>
+                <input type="checkbox" id="ativo" name="ativo" checked>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Criar Critério</button>
+        </form>
+    </div>
+{% endblock %}

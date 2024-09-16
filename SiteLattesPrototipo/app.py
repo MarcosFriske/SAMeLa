@@ -722,7 +722,166 @@ def remover_instrumento(instrumento_id):
 
     flash('Instrumento de avaliação removido com sucesso!', 'alert-success')
     return redirect(url_for('instrumentos_avaliacao'))
- 
+
+@app.route('/criterios')
+def criterios():
+    if 'loggedin' in session and session['role'] == 'Administrador':
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Parâmetros de filtro e paginação
+        filtro_instrumento = request.args.get('instrumento_filtro', '')
+        pagina = int(request.args.get('pagina', 1))
+        itens_por_pagina = int(request.args.get('itens_por_pagina', 5))
+
+        # Calcular o offset para a paginação
+        offset = (pagina - 1) * itens_por_pagina
+
+        # Filtro por instrumento de avaliação
+        if filtro_instrumento:
+            cursor.execute("""
+                SELECT * FROM criterios
+                WHERE fk_id_instrumento_avaliacao = %s
+                LIMIT %s OFFSET %s
+            """, (filtro_instrumento, itens_por_pagina, offset))
+            criterios = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT COUNT(*) FROM criterios
+                WHERE fk_id_instrumento_avaliacao = %s
+            """, (filtro_instrumento,))
+        else:
+            cursor.execute("""
+                SELECT * FROM criterios
+                LIMIT %s OFFSET %s
+            """, (itens_por_pagina, offset))
+            criterios = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT COUNT(*) FROM criterios
+            """)
+
+        # Verificação da contagem
+        count_result = cursor.fetchone()
+        if count_result and count_result[0]:
+            total_criterios = count_result[0]
+        else:
+            total_criterios = 0
+
+        # Calcular o número total de páginas
+        total_paginas = (total_criterios + itens_por_pagina - 1) // itens_por_pagina
+
+        # Buscar todos os instrumentos para o filtro
+        cursor.execute("SELECT * FROM instrumentos_avaliacao")
+        instrumentos = cursor.fetchall()
+
+        return render_template('criterios.html', criterios=criterios, instrumentos=instrumentos,
+                               pagina=pagina, total_paginas=total_paginas,
+                               filtro_instrumento=filtro_instrumento, itens_por_pagina=itens_por_pagina,
+                               user_role=session['role'])
+    else:
+        return redirect(url_for('login'))
+
+
+
+@app.route('/criar_criterio', methods=['GET', 'POST'])
+def criar_criterio():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    if request.method == 'POST':
+        try:
+            nome_criterio = request.form['criterio']  # Nome do critério
+            qtd_maxima_itens = request.form['qtd_maxima_itens']  # Quantidade máxima de itens
+            pontuacao_item = request.form['pontuacao_item']  # Pontuação por item
+            xpath_criterio_lattes = request.form['xpath_criterio_lattes']  # XPath do critério
+            considera_qualis = bool(request.form.get('considera_qualis'))  # Se considera qualis (checkbox)
+            id_instrumento = request.form['fk_id_instrumento_avaliacao']  # ID do instrumento de avaliação
+            ativo = bool(request.form.get('ativo'))  # Critério ativo (checkbox)
+            
+            # Inserir o novo critério no banco de dados
+            cursor.execute("""
+                INSERT INTO criterios (qtd_maxima_itens, pontuacao_item, criterio, xpath_criterio_lattes, 
+                                       considera_qualis, fk_id_instrumento_avaliacao, ativo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (qtd_maxima_itens, pontuacao_item, nome_criterio, xpath_criterio_lattes, considera_qualis, id_instrumento, ativo))
+
+            conn.commit()
+
+            flash('Critério criado e associado com sucesso!', 'success')
+        except psycopg2.Error as e:
+            conn.rollback()
+            flash(f'Ocorreu um erro ao criar o critério: {str(e)}', 'danger')
+
+    cursor.execute('SELECT * FROM instrumentos_avaliacao')
+    instrumentos = cursor.fetchall()
+
+    return render_template('criar_criterio.html', instrumentos=instrumentos)
+
+@app.route('/editar_criterio/<int:criterio_id>', methods=['GET', 'POST'])
+def editar_criterio(criterio_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    if request.method == 'POST':
+        try:
+            nome_criterio = request.form['criterio']
+            qtd_maxima_itens = int(request.form['qtd_maxima_itens'])
+            pontuacao_item = float(request.form['pontuacao_item'])
+            xpath_criterio_lattes = request.form['xpath_criterio_lattes']
+            considera_qualis = bool(request.form.get('considera_qualis'))
+            id_instrumento = int(request.form['fk_id_instrumento_avaliacao'])
+            ativo = bool(request.form.get('ativo'))
+
+            # Validação para evitar valores negativos
+            if qtd_maxima_itens < 0 or pontuacao_item < 0:
+                flash('A quantidade máxima de itens e a pontuação por item não podem ser negativos.', 'danger')
+                cursor.execute('SELECT * FROM criterios WHERE id_criterio = %s', (criterio_id,))
+                criterio = cursor.fetchone()
+                cursor.execute('SELECT * FROM instrumentos_avaliacao')
+                instrumentos = cursor.fetchall()
+                return render_template('editar_criterio.html', criterio=criterio, instrumentos=instrumentos)
+
+            cursor.execute("""
+                UPDATE criterios
+                SET qtd_maxima_itens = %s, pontuacao_item = %s, criterio = %s, xpath_criterio_lattes = %s, 
+                    considera_qualis = %s, fk_id_instrumento_avaliacao = %s, ativo = %s
+                WHERE id_criterio = %s
+            """, (qtd_maxima_itens, pontuacao_item, nome_criterio, xpath_criterio_lattes, considera_qualis, id_instrumento, ativo, criterio_id))
+
+            conn.commit()
+            flash('Critério atualizado com sucesso!', 'success')
+            return redirect(url_for('criterios'))
+        except psycopg2.Error as e:
+            conn.rollback()
+            flash(f'Ocorreu um erro ao atualizar o critério: {str(e)}', 'danger')
+
+    cursor.execute('SELECT * FROM criterios WHERE id_criterio = %s', (criterio_id,))
+    criterio = cursor.fetchone()
+    cursor.execute('SELECT * FROM instrumentos_avaliacao')
+    instrumentos = cursor.fetchall()
+
+    return render_template('editar_criterio.html', criterio=criterio, instrumentos=instrumentos)
+
+
+@app.route('/instrumentos_criterios/<int:instrumento_id>')
+def instrumentos_criterios(instrumento_id):
+    if 'loggedin' in session and session['role'] == 'Administrador':
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cursor.execute("""
+            SELECT c.criterio, c.qtd_maxima_itens, c.pontuacao_item, c.xpath_criterio_lattes, c.considera_qualis, c.ativo 
+            FROM criterios c
+            WHERE c.fk_id_instrumento_avaliacao = %s
+        """, (instrumento_id,))
+        criterios = cursor.fetchall()
+
+        return render_template('instrumentos_criterios.html', criterios=criterios, instrumento_id=instrumento_id)
+    else:
+        return redirect(url_for('login'))
+
 if __name__ == "__main__":
     # app.run(debug=True)
     app.run()
