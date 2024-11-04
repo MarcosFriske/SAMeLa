@@ -34,7 +34,7 @@
                     <option value="100" {% if itens_por_pagina == 100 %}selected{% endif %}>100</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Filtrar</button>
         </form>
 
         <!-- Mensagem quando não há critérios -->
@@ -97,7 +97,7 @@
 
         <!-- Botões de Ação para Adicionar e Associar Critérios -->
         {% if user_role == 'Administrador' %}
-        <div class="mt-3 d-flex justify-content-between">
+        <div class="mt-3 d-flex justify-content-around">
             <a href="/criar_criterio" class="btn btn-primary">Adicionar Novo Critério</a>
             {% if filtro_instrumento %}
             <a href="/associar_criterio?instrumento={{ filtro_instrumento }}" class="btn btn-secondary">Associar Critério Existente</a>

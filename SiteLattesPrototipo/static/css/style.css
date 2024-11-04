@@ -186,10 +186,9 @@ input:focus {
     border-color: #007bff;
 }
 
-.custom-button,
-.btn-primary {
+.custom-button {
     font-size: 18px;
-    width: 100%;
+    width: auto;
     padding: 12px;
     box-sizing: border-box;
     background-color: #007bff;
@@ -247,23 +246,4 @@ button:hover,
 
 .logo-geati {
     max-width: 20%; /* Ajuste a largura conforme necessário */
-}
-
-/* Ajustando o estilo do botão de registro */
-.btn-primary {
-    font-size: 18px;
-    width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-top: 15px;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
 }

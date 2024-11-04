@@ -333,7 +333,7 @@ def profile():
 @app.route('/eventos')
 def eventos():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute('SELECT * FROM eventos WHERE ativo = true')
+    cursor.execute('SELECT * FROM eventos WHERE ativo = true ORDER BY data_fim ASC')
     eventos = cursor.fetchall()
     
     cursor.execute('SELECT * FROM instrumentos_avaliacao')
@@ -895,5 +895,5 @@ def instrumentos_criterios(instrumento_id):
         return redirect(url_for('login'))
 
 if __name__ == "__main__":
-    # app.run(debug=True)
-    app.run()
+    app.run(debug=True)
+    # app.run()
