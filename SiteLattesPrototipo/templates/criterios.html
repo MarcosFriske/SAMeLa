@@ -100,7 +100,7 @@
         <div class="mt-3 d-flex justify-content-around">
             <a href="/criar_criterio" class="btn btn-primary">Adicionar Novo Critério</a>
             {% if filtro_instrumento %}
-            <a href="/associar_criterio?instrumento={{ filtro_instrumento }}" class="btn btn-secondary">Associar Critério Existente</a>
+            <a href="{{ url_for('associar_criterio', instrumento=filtro_instrumento) }}" class="btn btn-secondary">Associar Critério Existente</a>
             {% endif %}
         </div>
         {% endif %}
@@ -110,19 +110,29 @@
         function removerCriterio(criterio_id) {
             if (confirm("Tem certeza de que deseja remover este critério?")) {
                 const form = document.createElement('form');
-                form.method = 'post';
+                form.method = 'POST';  // Altere para POST
                 form.action = '/remover_criterio/' + criterio_id;
     
                 const hiddenField = document.createElement('input');
                 hiddenField.type = 'hidden';
-                hiddenField.name = 'criterio_id';
+                hiddenField.name = 'criterio_id';  // Este campo é opcional se passar o ID na URL
                 hiddenField.value = criterio_id;
-    
                 form.appendChild(hiddenField);
+    
+                // Incluir o filtro de instrumento na URL, se disponível
+                const filtroInstrumento = '{{ filtro_instrumento }}';
+                if (filtroInstrumento) {
+                    const filtroField = document.createElement('input');
+                    filtroField.type = 'hidden';
+                    filtroField.name = 'instrumento_filtro';  // Passar o filtro de instrumento
+                    filtroField.value = filtroInstrumento;
+                    form.appendChild(filtroField);
+                }
     
                 document.body.appendChild(form);
                 form.submit();
             }
         }
     </script>
+    
 {% endblock %}

@@ -736,6 +736,9 @@ def criterios():
         # Calcular o offset para a paginação
         offset = (pagina - 1) * itens_por_pagina
 
+        # Inicialização de instrumento_selecionado
+        instrumento_selecionado = None
+
         # Verificar se existe um filtro de instrumento
         if filtro_instrumento:
             # Filtrar critérios por instrumento de avaliação
@@ -769,7 +772,6 @@ def criterios():
             cursor.execute("""
                 SELECT COUNT(*) FROM criterios
             """)
-            instrumento_selecionado = None  # Nenhum instrumento foi selecionado
 
         # Verificação da contagem
         count_result = cursor.fetchone()
@@ -826,10 +828,45 @@ def criar_criterio():
             conn.rollback()
             flash(f'Ocorreu um erro ao criar o critério: {str(e)}', 'danger')
 
+        # Após criação, redireciona para a página de critérios com o filtro correto
+        return redirect(url_for('criterios', instrumento_filtro=request.form['fk_id_instrumento_avaliacao']))
+
+    # Carregar os instrumentos de avaliação disponíveis
     cursor.execute('SELECT * FROM instrumentos_avaliacao')
     instrumentos = cursor.fetchall()
 
     return render_template('criar_criterio.html', instrumentos=instrumentos)
+
+
+@app.route('/remover_criterio/<int:criterio_id>', methods=['POST'])
+def remover_criterio(criterio_id):
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    try:
+        # Deletar o critério com o ID fornecido
+        cursor.execute("""
+            DELETE FROM criterios WHERE id_criterio = %s
+        """, (criterio_id,))
+        
+        conn.commit()
+
+        flash('Critério removido com sucesso!', 'success')
+    except psycopg2.Error as e:
+        conn.rollback()
+        flash(f'Ocorreu um erro ao remover o critério: {str(e)}', 'danger')
+
+    # Obter os parâmetros de filtro para manter a visualização
+    filtro_instrumento = request.args.get('instrumento_filtro', '')  # Pega o valor de filtro ou uma string vazia
+    pagina = request.args.get('pagina', 1)  # A página deve ser obtida
+    itens_por_pagina = request.args.get('itens_por_pagina', 5)  # O número de itens por página
+
+    # Redirecionar de volta para a página de critérios com os filtros aplicados
+    return redirect(url_for('criterios', instrumento_filtro=filtro_instrumento, pagina=pagina, itens_por_pagina=itens_por_pagina))
+
+
 
 @app.route('/editar_criterio/<int:criterio_id>', methods=['GET', 'POST'])
 def editar_criterio(criterio_id):
@@ -877,6 +914,50 @@ def editar_criterio(criterio_id):
     instrumentos = cursor.fetchall()
 
     return render_template('editar_criterio.html', criterio=criterio, instrumentos=instrumentos)
+
+@app.route('/associar_criterio', methods=['GET', 'POST'])
+def associar_criterio():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Obter o ID do instrumento de avaliação da query string
+    instrumento_id = request.args.get('instrumento')
+    
+    if request.method == 'POST':
+        try:
+            criterio_id = request.form['criterio_id']  # ID do critério selecionado
+            
+            # Atualizar o critério para associá-lo ao instrumento selecionado
+            cursor.execute("""
+                UPDATE criterios
+                SET fk_id_instrumento_avaliacao = %s
+                WHERE id_criterio = %s
+            """, (instrumento_id, criterio_id))
+
+            conn.commit()
+            flash('Critério associado com sucesso!', 'success')
+            return redirect(url_for('criterios', instrumento_filtro=instrumento_id))
+        except psycopg2.Error as e:
+            conn.rollback()
+            flash(f'Ocorreu um erro ao associar o critério: {str(e)}', 'danger')
+
+    # Buscar todos os critérios que ainda não estão associados ao instrumento selecionado
+    cursor.execute("""
+        SELECT * FROM criterios
+        WHERE fk_id_instrumento_avaliacao IS NULL OR fk_id_instrumento_avaliacao != %s
+    """, (instrumento_id,))
+    criterios_disponiveis = cursor.fetchall()
+
+    # Buscar o instrumento selecionado
+    cursor.execute("""
+        SELECT * FROM instrumentos_avaliacao
+        WHERE id_instrumento_avaliacao = %s
+    """, (instrumento_id,))
+    instrumento = cursor.fetchone()
+
+    return render_template('associar_criterio.html', criterios=criterios_disponiveis, instrumento=instrumento)
 
 
 @app.route('/instrumentos_criterios/<int:instrumento_id>')

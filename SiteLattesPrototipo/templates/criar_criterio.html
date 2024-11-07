@@ -6,6 +6,11 @@
     <div class="container">
         <h2>Criar Novo Critério</h2>
         <form method="post" action="/criar_criterio">
+            <!-- Campos ocultos para passar parâmetros da URL -->
+            <input type="hidden" name="instrumento_filtro" value="{{ request.args.get('instrumento_filtro', '') }}">
+            <input type="hidden" name="pagina" value="{{ request.args.get('pagina', 1) }}">
+            <input type="hidden" name="itens_por_pagina" value="{{ request.args.get('itens_por_pagina', 5) }}">
+
             <div class="form-group">
                 <label for="criterio">Critério:</label>
                 <input type="text" id="criterio" name="criterio" class="form-control" required>

@@ -1,0 +1,48 @@
+{% extends 'layout.html' %}
+
+{% block title %}Associar Critério Existente{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Associar Critério ao Instrumento: {{ instrumento.nome }}</h2>
+
+    {% if criterios %}
+    <form method="post" action="{{ url_for('associar_criterio', instrumento=instrumento.id_instrumento_avaliacao) }}">
+        <div class="form-group">
+            <label for="criterio_id">Selecione o Critério:</label>
+            
+            <!-- Campo de busca para filtrar a lista de critérios -->
+            <input type="text" id="search-criterio" placeholder="Buscar critério" class="form-control mb-3">
+            
+            <!-- Lista de critérios com radio buttons para seleção -->
+            <div id="criterio-list">
+                <ul class="list-group">
+                    {% for criterio in criterios %}
+                    <li class="list-group-item criterio-item" data-name="{{ criterio.criterio }}">
+                        <input type="radio" name="criterio_id" value="{{ criterio.id_criterio }}" required>
+                        {{ criterio.criterio }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Associar Critério</button>
+    </form>
+    {% else %}
+    <p>Não há critérios disponíveis para associar a este instrumento.</p>
+    {% endif %}
+
+    <a href="{{ url_for('criterios', instrumento_filtro=instrumento.id_instrumento_avaliacao) }}" class="btn btn-secondary mt-3">Voltar</a>
+</div>
+
+<!-- Script para filtro dinâmico da lista de critérios -->
+<script>
+    document.getElementById('search-criterio').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        document.querySelectorAll('.criterio-item').forEach(function(item) {
+            const criterioName = item.getAttribute('data-name').toLowerCase();
+            item.style.display = criterioName.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+</script>
+{% endblock %}
