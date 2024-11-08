@@ -110,24 +110,31 @@
         function removerCriterio(criterio_id) {
             if (confirm("Tem certeza de que deseja remover este critério?")) {
                 const form = document.createElement('form');
-                form.method = 'POST';  // Altere para POST
+                form.method = 'POST';
                 form.action = '/remover_criterio/' + criterio_id;
-    
-                const hiddenField = document.createElement('input');
-                hiddenField.type = 'hidden';
-                hiddenField.name = 'criterio_id';  // Este campo é opcional se passar o ID na URL
-                hiddenField.value = criterio_id;
-                form.appendChild(hiddenField);
     
                 // Incluir o filtro de instrumento na URL, se disponível
                 const filtroInstrumento = '{{ filtro_instrumento }}';
                 if (filtroInstrumento) {
-                    const filtroField = document.createElement('input');
-                    filtroField.type = 'hidden';
-                    filtroField.name = 'instrumento_filtro';  // Passar o filtro de instrumento
-                    filtroField.value = filtroInstrumento;
-                    form.appendChild(filtroField);
+                    const hiddenField = document.createElement('input');
+                    hiddenField.type = 'hidden';
+                    hiddenField.name = 'instrumento_filtro';
+                    hiddenField.value = filtroInstrumento;
+                    form.appendChild(hiddenField);
                 }
+    
+                // Inclui outros parâmetros necessários
+                const paginaField = document.createElement('input');
+                paginaField.type = 'hidden';
+                paginaField.name = 'pagina';
+                paginaField.value = '{{ pagina }}';
+                form.appendChild(paginaField);
+    
+                const itensPorPaginaField = document.createElement('input');
+                itensPorPaginaField.type = 'hidden';
+                itensPorPaginaField.name = 'itens_por_pagina';
+                itensPorPaginaField.value = '{{ itens_por_pagina }}';
+                form.appendChild(itensPorPaginaField);
     
                 document.body.appendChild(form);
                 form.submit();

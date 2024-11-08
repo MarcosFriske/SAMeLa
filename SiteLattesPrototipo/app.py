@@ -852,18 +852,17 @@ def remover_criterio(criterio_id):
         """, (criterio_id,))
         
         conn.commit()
-
         flash('Critério removido com sucesso!', 'success')
     except psycopg2.Error as e:
         conn.rollback()
         flash(f'Ocorreu um erro ao remover o critério: {str(e)}', 'danger')
 
-    # Obter os parâmetros de filtro para manter a visualização
-    filtro_instrumento = request.args.get('instrumento_filtro', '')  # Pega o valor de filtro ou uma string vazia
-    pagina = request.args.get('pagina', 1)  # A página deve ser obtida
-    itens_por_pagina = request.args.get('itens_por_pagina', 5)  # O número de itens por página
+    # Obter o filtro de instrumento do form
+    filtro_instrumento = request.form.get('instrumento_filtro', '')
+    pagina = request.form.get('pagina', 1)
+    itens_por_pagina = request.form.get('itens_por_pagina', 5)
 
-    # Redirecionar de volta para a página de critérios com os filtros aplicados
+    # Redirecionar para a página de critérios com os filtros aplicados
     return redirect(url_for('criterios', instrumento_filtro=filtro_instrumento, pagina=pagina, itens_por_pagina=itens_por_pagina))
 
 
