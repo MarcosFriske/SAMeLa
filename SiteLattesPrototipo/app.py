@@ -973,6 +973,104 @@ def instrumentos_criterios(instrumento_id):
         return render_template('instrumentos_criterios.html', criterios=criterios, instrumento_id=instrumento_id)
     else:
         return redirect(url_for('login'))
+    
+    
+@app.route('/registrar_servidor', methods=['GET', 'POST'])
+def registrar_servidor():
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Obtenha os tipos de servidor do banco de dados (type customizado)
+    cursor.execute("SELECT unnest(enum_range(NULL::type_servidor)) AS tipo_servidor")
+    tipos_servidor = [row['tipo_servidor'] for row in cursor.fetchall()]
+
+    if request.method == 'POST':
+        # Obtenha os dados do formulário
+        fullname = request.form.get('fullname')
+        matricula = request.form.get('matricula')
+        password = request.form.get('password')
+        email = request.form.get('email')
+        tipo_servidor = request.form.get('tipo_servidor')
+        lattes_link = request.form.get('lattes_link')
+
+        # Validações para cada campo
+        if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+            flash('Endereço de e-mail inválido!', 'alert-warning')
+        elif not re.match(r'^[0-9]+$', matricula):
+            flash('Matrícula deve conter apenas números!', 'alert-warning')
+        elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
+            flash('Lattes ID inválido!', 'alert-warning')
+        else:
+            # Se todos os dados forem válidos, insira no banco de dados
+            _hashed_password = generate_password_hash(password)
+            cursor.execute(
+                "INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s, %s, %s, %s, %s, %s)",
+                (fullname.upper(), matricula, _hashed_password, email, tipo_servidor, lattes_link)
+            )
+            conn.commit()
+            flash('Servidor registrado com sucesso!', 'alert-success')
+            return redirect(url_for('listar_servidores'))
+
+    return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+@app.route('/servidores', methods=['GET'])
+def listar_servidores():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Número de servidores por página
+
+    # Consulta paginada para obter servidores
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute("SELECT COUNT(*) FROM servidores")
+    total_servidores = cursor.fetchone()[0]
+    
+    cursor.execute(
+        "SELECT * FROM servidores ORDER BY id_servidor LIMIT %s OFFSET %s",
+        (per_page, (page - 1) * per_page)
+    )
+    servidores = cursor.fetchall()
+    
+    # Calcular paginação
+    total_pages = (total_servidores + per_page - 1) // per_page
+    pagination = {
+        'current': page,
+        'total_pages': total_pages,
+        'has_prev': page > 1,
+        'has_next': page < total_pages
+    }
+
+    return render_template('servidores.html', servidores=servidores, pagination=pagination)
+
+@app.route('/editar_servidor/<int:id>', methods=['GET', 'POST'])
+def editar_servidor(id):
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    
+    # Obtenha dados do servidor para edição
+    cursor.execute("SELECT * FROM servidores WHERE id_servidor = %s", (id,))
+    servidor = cursor.fetchone()
+
+    # Obtenha tipos de servidor disponíveis
+    cursor.execute("SELECT DISTINCT tipo_servidor FROM servidores")
+    tipos_servidor = [row['tipo_servidor'] for row in cursor.fetchall()]
+
+    if request.method == 'POST':
+        # Dados atualizados do formulário
+        fullname = request.form['fullname']
+        matricula = request.form['matricula']
+        email = request.form['email']
+        tipo_servidor = request.form['tipo_servidor']
+        lattes_link = request.form['lattes_link']
+
+        cursor.execute("""
+            UPDATE servidores
+            SET nome = %s, matricula = %s, e_mail = %s, tipo_servidor = %s, lattes_link = %s
+            WHERE id_servidor = %s
+        """, (fullname, matricula, email, tipo_servidor, lattes_link, id))
+        
+        conn.commit()
+        flash('Servidor atualizado com sucesso!', 'alert-success')
+        return redirect(url_for('listar_servidores'))
+    
+    return render_template('editar_servidor.html', servidor=servidor, tipos_servidor=tipos_servidor)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

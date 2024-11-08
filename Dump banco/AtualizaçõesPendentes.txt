@@ -1,10 +1,10 @@
 tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA - feito
 
-descrição do sistema e tela de login reutilizar
+descrição do sistema e tela de login reutilizar - ainda não fiz a descrição do sistema
 
 permitir login com e-mail também - feito
 
-criar tela de critérios, e criar tela de associação de critérios
+criar tela de critérios, e criar tela de associação de critérios - feito, mas talvez precise separar a associação de critério e instrumento em uma tabela a parte.
 
 tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia.
 

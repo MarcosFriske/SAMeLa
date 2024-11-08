@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Servidores Registrados</h2>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome Completo</th>
+                <th>Matrícula</th>
+                <th>Email</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for servidor in servidores %}
+            <tr>
+                <td>{{ servidor.id_servidor }}</td>
+                <td>{{ servidor.nome }}</td>
+                <td>{{ servidor.matricula }}</td>
+                <td>{{ servidor.e_mail }}</td>
+                <td>{{ servidor.tipo_servidor }}</td>
+                <td>
+                    <a href="{{ url_for('editar_servidor', id=servidor['id_servidor']) }}" class="btn btn-primary">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <nav>
+        <ul class="pagination">
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('listar_servidores', page=pagination.current - 1) }}">Anterior</a></li>
+            {% endif %}
+            {% for p in range(1, pagination.total_pages + 1) %}
+            <li class="page-item {{ 'active' if p == pagination.current else '' }}"><a class="page-link" href="{{ url_for('listar_servidores', page=p) }}">{{ p }}</a></li>
+            {% endfor %}
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('listar_servidores', page=pagination.current + 1) }}">Próxima</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <a href="{{ url_for('registrar_servidor') }}" class="btn btn-success mt-3">Registrar Novo Servidor</a>
+</div>
+{% endblock %}

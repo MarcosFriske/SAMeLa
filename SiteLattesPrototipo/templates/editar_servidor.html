@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Editar Servidor</h2>
+    
+    <form action="{{ url_for('editar_servidor', id=servidor.id_servidor) }}" method="POST">
+        <div class="form-group">
+            <label for="fullname">Nome Completo:</label>
+            <input type="text" class="form-control" id="fullname" name="fullname" value="{{ servidor.nome }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="tipo_servidor">Tipo de Servidor:</label>
+            <select class="form-control" id="tipo_servidor" name="tipo_servidor" required>
+                <option value="" disabled>Escolha o tipo de servidor</option>
+                {% for tipo in tipos_servidor %}
+                    <option value="{{ tipo }}" {% if servidor.tipo_servidor == tipo %}selected{% endif %}>{{ tipo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="matricula">Matrícula:</label>
+            <input type="text" class="form-control" id="matricula" name="matricula" value="{{ servidor.matricula }}" required>
+            <span id="matriculaHint" class="hint text-warning d-none">Apenas números.</span>
+            <span id="matriculaStatus"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">E-mail:</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ servidor.e_mail }}" required>
+            <span id="emailHint" class="hint text-warning d-none">Formato esperado: exemplo@dominio.com</span>
+            <span id="emailStatus"></span>
+        </div>
+        
+        <div class="form-group">
+            <label for="lattes_link">Link do Lattes:</label>
+            <input type="url" class="form-control" id="lattes_link" name="lattes_link" value="{{ servidor.lattes_link }}" required placeholder="http://lattes.cnpq.br/1234567890123456">
+            <span id="lattesHint" class="hint text-warning d-none">Formato: http://lattes.cnpq.br/ seguido de 16 dígitos.</span>
+            <span id="lattesStatus"></span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary mt-3" id="submitBtn">Salvar Alterações</button>
+    </form>
+</div>
+
+<script>
+    // Funções de validação são iguais ao template de registro
+    function validateEmail(email) {
+        const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
+        return emailRegex.test(email);
+    }
+
+    function validateMatricula(matricula) {
+        const matriculaRegex = /^[0-9]+$/;
+        return matriculaRegex.test(matricula);
+    }
+
+    function validateLattesLink(link) {
+        const lattesRegex = /^http:\/\/lattes.cnpq.br\/\d{16}$/;
+        return lattesRegex.test(link);
+    }
+
+    function validateField(field, validatorFn, hintId, statusId) {
+        const isValid = validatorFn(field.value);
+        toggleHintAndStatus(field, isValid, hintId, statusId);
+    }
+
+    function toggleHintAndStatus(field, isValid, hintId, statusId) {
+        const statusElement = document.getElementById(statusId);
+        if (isValid) {
+            statusElement.textContent = "✔️";
+            statusElement.classList.remove('text-danger');
+            statusElement.classList.add('text-success');
+            if (hintId) document.getElementById(hintId).classList.add('d-none');
+        } else {
+            statusElement.textContent = "❌";
+            statusElement.classList.remove('text-success');
+            statusElement.classList.add('text-danger');
+            if (hintId) document.getElementById(hintId).classList.remove('d-none');
+        }
+    }
+
+    // Adiciona evento de validação para cada campo ao perder o foco
+    document.getElementById('email').addEventListener('blur', function() {
+        validateField(this, validateEmail, 'emailHint', 'emailStatus');
+    });
+
+    document.getElementById('matricula').addEventListener('blur', function() {
+        validateField(this, validateMatricula, 'matriculaHint', 'matriculaStatus');
+    });
+
+    document.getElementById('lattes_link').addEventListener('blur', function() {
+        if (!/^http:\/\/|^https:\/\//i.test(this.value) && this.value.length > 0) {
+            this.value = 'http://' + this.value;
+        }
+        validateField(this, validateLattesLink, 'lattesHint', 'lattesStatus');
+    });
+
+</script>
+
+{% endblock %}
