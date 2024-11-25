@@ -1,15 +1,9 @@
-tela de entrada aonde temos nome da aplicação SaMELA e imagem da SaMELA - feito
-
 descrição do sistema e tela de login reutilizar - ainda não fiz a descrição do sistema
-
-permitir login com e-mail também - feito
 
 criar tela de critérios, e criar tela de associação de critérios - feito, mas talvez precise separar a associação de critério e instrumento em uma tabela a parte.
 criar tabela de relacionamento de critérios e instrumentos de avaliação
 
 Cadastro de servidores via administrador, botar role, admin, docente, coord de evento etc - Feito, falta trocar o nome das roles do type_servidor
-
-Permitir trocar senha usuário. - Isso já faz
 
 Mandar e-mail, avisando da criação da conta com senha temporária para acessar e necessidade de atualizar a senha. - Fizemos testes e estava enviando certinho o e-mail
 

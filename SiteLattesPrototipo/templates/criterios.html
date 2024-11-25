@@ -4,142 +4,97 @@
 
 {% block content %}
     <div class="container-fluid">
-        <h2>
-            Critérios de Avaliação Disponíveis
-            {% if filtro_instrumento %}
-                para {{ instrumento_selecionado.nome }}
-            {% else %}
-                (Todos)
-            {% endif %}
-        </h2>
+        <h2>Critérios de Avaliação</h2>
 
-        <!-- Filtro por Instrumento de Avaliação -->
-        <form method="get" action="/criterios">
-            <div class="form-group">
-                <label for="instrumento_filtro">Filtrar por Instrumento de Avaliação:</label>
-                <select id="instrumento_filtro" name="instrumento_filtro" class="form-control">
-                    <option value="">Todos</option>
-                    {% for instrumento in instrumentos %}
-                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if instrumento.id_instrumento_avaliacao == filtro_instrumento %}selected{% endif %}>{{ instrumento.nome }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="itens_por_pagina">Itens por Página:</label>
-                <select id="itens_por_pagina" name="itens_por_pagina" class="form-control">
-                    <option value="5" {% if itens_por_pagina == 5 %}selected{% endif %}>5</option>
-                    <option value="10" {% if itens_por_pagina == 10 %}selected{% endif %}>10</option>
-                    <option value="20" {% if itens_por_pagina == 20 %}selected{% endif %}>20</option>
-                    <option value="50" {% if itens_por_pagina == 50 %}selected{% endif %}>50</option>
-                    <option value="100" {% if itens_por_pagina == 100 %}selected{% endif %}>100</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg btn-block">Filtrar</button>
-        </form>
+        <!-- Barra de Pesquisa -->
+        <div class="form-group">
+            <label for="pesquisa">Pesquisar Critérios:</label>
+            <input type="text" id="pesquisa" name="pesquisa" class="form-control" placeholder="Digite para pesquisar..." onkeyup="searchCriterios()">
+        </div>
 
-        <!-- Mensagem quando não há critérios -->
-        {% if criterios|length == 0 %}
-            <div class="alert alert-warning mt-3">
-                <p>Não há critérios associados a este instrumento de avaliação atualmente.</p>
-                <p>Você pode criar um novo critério utilizando o botão abaixo.</p>
-            </div>
-        {% else %}
-            <table class="table mt-3">
-                <tr>
-                    <th>ID</th>
-                    <th>Critério</th>
-                    <th>Quantidade Máxima de Itens</th>
-                    <th>Pontuação por Item</th>
-                    <th>XPath</th>
-                    <th>Considera Qualis</th>
-                    <th>Ativo</th>
-                    {% if user_role == 'Administrador' %}
-                    <th>Editar</th>
-                    <th>Remover</th>
-                    {% endif %}
-                </tr>
-                {% for criterio in criterios %}
-                <tr>
-                    <td>{{ criterio.id_criterio }}</td>
-                    <td>{{ criterio.criterio }}</td>
-                    <td>{{ criterio.qtd_maxima_itens }}</td>
-                    <td>{{ criterio.pontuacao_item }}</td>
-                    <td>{{ criterio.xpath_criterio_lattes }}</td>
-                    <td>{{ criterio.considera_qualis }}</td>
-                    <td>{{ criterio.ativo }}</td>
-                    {% if user_role == 'Administrador' %}
-                    <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
-                    <td><a href="#" onclick="removerCriterio('{{ criterio.id_criterio }}')" class="btn btn-danger btn-sm">Remover</a></td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </table>
-        {% endif %}
-
-        <!-- Paginação -->
-        <ul class="pagination">
-            {% if pagina > 1 %}
-            <li class="page-item">
-                <a class="page-link" href="?pagina={{ pagina - 1 }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">Anterior</a>
-            </li>
-            {% endif %}
-            {% for p in range(1, total_paginas + 1) %}
-            <li class="page-item {% if p == pagina %}active{% endif %}">
-                <a class="page-link" href="?pagina={{ p }}&instrumento_filtro={{ filtro_instrumento }}&itens_por_pagina={{ itens_por_pagina }}">{{ p }}</a>
-            </li>
+        <!-- Tabela de Critérios -->
+        <table class="table mt-3" id="tabela-criterios" style="table-layout: fixed; width: 100%;">
+            <tr>
+                <th>Critério</th>
+                <th>Quantidade Máxima de Itens</th>
+                <th>Pontuação por Item</th>
+                <th>XPath</th>
+                <th>Considera Qualis</th>
+                <th>Ativo</th>
+                <th>Editar</th>
+                <th>Remover</th>
+            </tr>
+            {% for criterio in criterios %}
+            <tr>
+                <td>{{ criterio.criterio }}</td>
+                <td>{{ criterio.qtd_maxima_itens }}</td>
+                <td>{{ criterio.pontuacao_item }}</td>
+                <td>{{ criterio.xpath_criterio_lattes }}</td>
+                <td>{{ criterio.considera_qualis }}</td>
+                <td>{{ criterio.ativo }}</td>
+                <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
+                
+                <!-- Formulário para Remover Critério -->
+                <td>
+                    <form action="/remover_criterio/{{ criterio.id_criterio }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm">Remover</button>
+                    </form>
+                </td>
+            </tr>
             {% endfor %}
-            {% if pagina < total_paginas %}
-            <li class="page-item">
-                <a class="page-link" href="?pagina={{ pagina + 1 }}&instrumento_filtro={{ itens_por_pagina }}">Próximo</a>
-            </li>
-            {% endif %}
-        </ul>
+        </table>
 
-        <!-- Botões de Ação para Adicionar e Associar Critérios -->
-        {% if user_role == 'Administrador' %}
         <div class="mt-3 d-flex justify-content-around">
             <a href="/criar_criterio" class="btn btn-primary">Adicionar Novo Critério</a>
-            {% if filtro_instrumento %}
-            <a href="{{ url_for('associar_criterio', instrumento=filtro_instrumento) }}" class="btn btn-secondary">Associar Critério Existente</a>
-            {% endif %}
         </div>
-        {% endif %}
+
+        <!-- Paginação -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if pagina > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="/criterios?pagina={{ pagina - 1 }}&pesquisa={{ pesquisa }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for i in range(1, total_paginas + 1) %}
+                    <li class="page-item {% if i == pagina %}active{% endif %}">
+                        <a class="page-link" href="/criterios?pagina={{ i }}&pesquisa={{ pesquisa }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+
+                {% if pagina < total_paginas %}
+                    <li class="page-item">
+                        <a class="page-link" href="/criterios?pagina={{ pagina + 1 }}&pesquisa={{ pesquisa }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+
     </div>
 
     <script>
-        function removerCriterio(criterio_id) {
-            if (confirm("Tem certeza de que deseja remover este critério?")) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/remover_criterio/' + criterio_id;
-    
-                // Incluir o filtro de instrumento na URL, se disponível
-                const filtroInstrumento = '{{ filtro_instrumento }}';
-                if (filtroInstrumento) {
-                    const hiddenField = document.createElement('input');
-                    hiddenField.type = 'hidden';
-                    hiddenField.name = 'instrumento_filtro';
-                    hiddenField.value = filtroInstrumento;
-                    form.appendChild(hiddenField);
-                }
-    
-                // Inclui outros parâmetros necessários
-                const paginaField = document.createElement('input');
-                paginaField.type = 'hidden';
-                paginaField.name = 'pagina';
-                paginaField.value = '{{ pagina }}';
-                form.appendChild(paginaField);
-    
-                const itensPorPaginaField = document.createElement('input');
-                itensPorPaginaField.type = 'hidden';
-                itensPorPaginaField.name = 'itens_por_pagina';
-                itensPorPaginaField.value = '{{ itens_por_pagina }}';
-                form.appendChild(itensPorPaginaField);
-    
-                document.body.appendChild(form);
-                form.submit();
-            }
+        function searchCriterios() {
+            let pesquisa = document.getElementById('pesquisa').value;
+            let url = '/criterios?pesquisa=' + pesquisa; // Passa o valor da pesquisa para o backend
+
+            fetch(url, { 
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(response => response.text())
+                .then(data => {
+                    // Atualiza apenas o conteúdo da tabela
+                    document.getElementById('tabela-criterios').innerHTML = data;
+                })
+                .catch(error => {
+                    console.error("Erro na busca: ", error);
+                    alert("Houve um erro ao realizar a pesquisa. Tente novamente.");
+                });
         }
     </script>
-    
 {% endblock %}

@@ -1,42 +1,60 @@
 {% extends 'layout.html' %}
 
-{% block title %}Associar Critério Existente{% endblock %}
+{% block title %}Associar Critérios ao Instrumento{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h2>Associar Critério ao Instrumento: {{ instrumento.nome }}</h2>
+    <h2>Associar Critérios</h2>
 
-    {% if criterios %}
-    <form method="post" action="{{ url_for('associar_criterio', instrumento=instrumento.id_instrumento_avaliacao) }}">
-        <div class="form-group">
-            <label for="criterio_id">Selecione o Critério:</label>
-            
-            <!-- Campo de busca para filtrar a lista de critérios -->
-            <input type="text" id="search-criterio" placeholder="Buscar critério" class="form-control mb-3">
-            
-            <!-- Lista de critérios com radio buttons para seleção -->
-            <div id="criterio-list">
-                <ul class="list-group">
-                    {% for criterio in criterios %}
-                    <li class="list-group-item criterio-item" data-name="{{ criterio.criterio }}">
-                        <input type="radio" name="criterio_id" value="{{ criterio.id_criterio }}" required>
-                        {{ criterio.criterio }}
-                    </li>
-                    {% endfor %}
-                </ul>
+    <!-- Lista de instrumentos de avaliação -->
+    <h4>Selecione um Instrumento de Avaliação:</h4>
+    <ul class="list-group">
+        {% for instrumento in instrumentos %}
+            <li class="list-group-item">
+                <a href="{{ url_for('associar_criterios', instrumento_filtro=instrumento.id_instrumento_avaliacao) }}">
+                    {{ instrumento.nome }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if filtro_instrumento %}
+        <h3>Instrumento: {{ instrumento.nome }}</h3>
+
+        <!-- Seção de critérios já associados -->
+        <h4>Critérios Ativos</h4>
+        <ul class="list-group">
+            {% for criterio in criterios_associados %}
+                <form action="{{ url_for('remover_associacao_criterio_instrumento', id_relacao=criterio['id_relacao']) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">Remover</button>
+                </form>
+            {% endfor %}
+        </ul>
+
+        <!-- Seção de critérios disponíveis -->
+        <h4>Adicionar Critérios</h4>
+        <form method="post">
+            <div class="form-group">
+                <input type="text" name="buscar_criterio" class="form-control" placeholder="Buscar critério" id="search-criterio">
             </div>
-        </div>
-        <button type="submit" class="btn btn-primary">Associar Critério</button>
-    </form>
-    {% else %}
-    <p>Não há critérios disponíveis para associar a este instrumento.</p>
+            <ul class="list-group" id="criterio-list">
+                {% for criterio in criterios_disponiveis %}
+                    <li class="list-group-item criterio-item" data-name="{{ criterio['criterio'] }}">
+                        <input type="checkbox" name="criterios_id" value="{{ criterio['id_criterio'] }}">
+                        {{ criterio['criterio'] }}
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="submit" class="btn btn-primary mt-3">Adicionar Critérios ao Instrumento</button>
+        </form>
+
     {% endif %}
 
-    <a href="{{ url_for('criterios', instrumento_filtro=instrumento.id_instrumento_avaliacao) }}" class="btn btn-secondary mt-3">Voltar</a>
+    <a href="{{ url_for('criterios') }}" class="btn btn-secondary mt-3">Voltar</a>
 </div>
 
-<!-- Script para filtro dinâmico da lista de critérios -->
 <script>
+    // Filtro dinâmico para a lista de critérios
     document.getElementById('search-criterio').addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
         document.querySelectorAll('.criterio-item').forEach(function(item) {
@@ -45,4 +63,5 @@
         });
     });
 </script>
+
 {% endblock %}

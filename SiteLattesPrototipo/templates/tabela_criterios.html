@@ -1,0 +1,27 @@
+<!-- tabela_criterios.html -->
+
+<tr>
+    <th>ID</th>
+    <th>Critério</th>
+    <th>Quantidade Máxima de Itens</th>
+    <th>Pontuação por Item</th>
+    <th>XPath</th>
+    <th>Considera Qualis</th>
+    <th>Ativo</th>
+    <th>Editar</th>
+    <th>Remover</th>
+</tr>
+
+{% for criterio in criterios %}
+<tr>
+    <td>{{ criterio.id_criterio }}</td>
+    <td>{{ criterio.criterio }}</td>
+    <td>{{ criterio.qtd_maxima_itens }}</td>
+    <td>{{ criterio.pontuacao_item }}</td>
+    <td>{{ criterio.xpath_criterio_lattes }}</td>
+    <td>{{ criterio.considera_qualis }}</td>
+    <td>{{ criterio.ativo }}</td>
+    <td><a href="/editar_criterio/{{ criterio.id_criterio }}" class="btn btn-warning btn-sm">Editar</a></td>
+    <td><a href="#" onclick="removerCriterio('{{ criterio.id_criterio }}')" class="btn btn-danger btn-sm">Remover</a></td>
+</tr>
+{% endfor %}
