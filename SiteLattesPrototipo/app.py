@@ -922,20 +922,22 @@ def associar_criterios():
             flash('Instrumento de avaliação não encontrado.', 'danger')
             return redirect(url_for('associar_criterios'))
 
-        # Buscar todos os critérios já associados a esse instrumento, incluindo a id_relacao
+        # Buscar critérios associados ordenados alfabeticamente
         cursor.execute("""
             SELECT rci.id_relacao, c.id_criterio, c.criterio
             FROM criterios c
             JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
             WHERE rci.id_instrumento_avaliacao = %s
+            ORDER BY c.criterio ASC
         """, (filtro_instrumento,))
         criterios_associados = cursor.fetchall()
 
-        # Buscar todos os critérios disponíveis, mas excluir os já associados ao instrumento
+        # Buscar critérios disponíveis ordenados alfabeticamente
         cursor.execute("""
             SELECT id_criterio, criterio 
             FROM criterios 
             WHERE id_criterio NOT IN (SELECT id_criterio FROM rel_criterios_instrumentos WHERE id_instrumento_avaliacao = %s)
+            ORDER BY criterio ASC
         """, (filtro_instrumento,))
         criterios_disponiveis = cursor.fetchall()
 
@@ -962,6 +964,7 @@ def associar_criterios():
     instrumentos = cursor.fetchall()
     
     return render_template('associar_criterio.html', instrumentos=instrumentos)
+
 
 @app.route('/remover_associacao_criterio_instrumento/<int:id_relacao>', methods=['POST'])
 def remover_associacao_criterio_instrumento(id_relacao):
