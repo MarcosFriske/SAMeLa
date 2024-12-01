@@ -67,12 +67,24 @@ def send_password_reset_email(receiver_email, token):
 
 @app.route('/')
 def home():
-    # Check if user is loggedin
+    # Check if user is logged in
     if 'loggedin' in session:
-        # User is loggedin show them the home page
-        return render_template('home.html', nome_completo=session['nome_completo'].title(), role=session['role'])
-    # User is not loggedin redirect to login page
+        # Geração de texto genérico para os avisos (substituir futuramente por consulta no banco)
+        avisos = [
+            "Bem-vindo ao sistema SAMeLa!",
+            "Lembre-se de atualizar seus dados pessoais.",
+            "O prazo para submissão de atividades é dia 10/12/2024."
+        ]
+        # Renderiza a página inicial com os avisos
+        return render_template(
+            'home.html', 
+            nome_completo=session['nome_completo'].title(), 
+            role=session['role'],
+            avisos=avisos  # Passa os avisos para o template
+        )
+    # Usuário não está logado, redireciona para a página de login
     return redirect(url_for('login'))
+
  
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -82,72 +94,82 @@ def login():
     if 'matricula' in request.cookies:
         matricula = request.cookies.get('matricula')
         password = request.cookies.get('senha')
-        # Check if account exists using SQL query
         cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
-        # Fetch one record and return result
         account = cursor.fetchone()
         
         if account:
             password_rs = account['senha']
-            print(password_rs)
-            # If account exists in users table in out database
             if check_password_hash(password_rs, password):
-                # Create session data, we can access this data in other routes
                 session['loggedin'] = True
                 session['id'] = account['id_servidor']
                 session['matricula'] = account['matricula']
                 session['senha'] = account['senha']
                 session['nome_completo'] = account['nome']
                 session['role'] = account['tipo_servidor']
-                # Redirect to home page
                 return redirect(url_for('home'))
             else:
-                # Account doesnt exist or matricula/password incorrect
                 flash('Matricula/Senha incorretos.', 'warning')
         else:
-            # Account doesnt exist or matricula/password incorrect
             flash('Matricula/Senha incorretos.', 'warning')
     
-    # Checar se foi tentativa de login normal, "matricula" e "password" POST request existe (usuario submeteu o formulario)
     elif request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
         matricula = request.form['matricula']
         password = request.form['password']
         remember = True if request.form.get('remember') else False
-        print(password)
-         
-        # Check if account exists using MySQL
+        
         cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
-        # Fetch one record and return result
         account = cursor.fetchone()
         
         if account:
             password_rs = account['senha']
-            print(password_rs)
-            # If account exists in users table in out database
             if check_password_hash(password_rs, password):
-                # Create session data, we can access this data in other routes
                 session['loggedin'] = True
                 session['id'] = account['id_servidor']
                 session['matricula'] = account['matricula']
                 session['senha'] = account['senha']
                 session['nome_completo'] = account['nome']
                 session['role'] = account['tipo_servidor']
+                
                 if remember:
                     resp = make_response(redirect(url_for('home')))
                     resp.set_cookie('matricula', matricula, max_age=COOKIE_TIME_OUT)
                     resp.set_cookie('senha', password, max_age=COOKIE_TIME_OUT)
                     resp.set_cookie('remember', 'checked', max_age=COOKIE_TIME_OUT)
                     return resp
-                # Redirect to home page
                 return redirect(url_for('home'))
             else:
-                # Account doesnt exist or matricula/password incorrect
                 flash('Matricula/Senha incorretos.', 'warning')
         else:
-            # Account doesnt exist or matricula/password incorrect
             flash('Matricula/Senha incorretos.', 'warning')
- 
-    return render_template('login.html')
+
+    # Paginação dos avisos
+    avisos = [
+        {"tipo": "info", "mensagem": "O sistema estará indisponível no dia 05/12 das 08:00 às 12:00."},
+        {"tipo": "warning", "mensagem": "Atualize sua senha regularmente para maior segurança."},
+        {"tipo": "success", "mensagem": "Estamos felizes em tê-lo(a) de volta."},
+        {"tipo": "info", "mensagem": "Manutenção programada para o próximo fim de semana."},
+        {"tipo": "error", "mensagem": "Erro no sistema detectado."},
+    ]
+
+    # Paginação manual
+    page = request.args.get('page', 1, type=int)
+    per_page = 2  # Quantos avisos por página
+    total = len(avisos)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_avisos = avisos[start:end]
+
+    pagination = {
+        "has_prev": page > 1,
+        "has_next": end < total,
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if end < total else None,
+        "pages": list(range(1, (total // per_page) + (1 if total % per_page > 0 else 0) + 1)),
+        "current_page": page,
+    }
+
+    return render_template('login.html', avisos=paginated_avisos, pagination=pagination)
+
   
 @app.route('/register', methods=['GET', 'POST'])
 def register():

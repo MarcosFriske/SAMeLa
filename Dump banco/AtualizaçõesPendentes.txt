@@ -14,6 +14,7 @@ Atualizar tabela eventos, com data inicio e fim inscrição evento - ok
 
 botão desescrever evento, alterar para lixeira - ok
 
+Permitir atualização de tipos no banco de dados, tipo evento e tipo servidor - alter type - ok
 
 BOAS PRATICAS BANCO
 https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/edit?usp=sharing
@@ -28,14 +29,10 @@ planilha de resultados - utilizar template de excel, para manter no padrão da p
 
 Gerar lista de todos inscritos no evento e pontuação para administrador - página do site
 
-
-Permitir atualização de tipos no banco de dados, tipo evento e tipo servidor - alter type
-
 Perfil Administrador e Docente, adicionar perfil coordenador - Coordenador de pesquisa, poder trabalhar com os users, avaliação em lote, inserir matricula servidor, 
 escolhendo servidor, e adicionar o servidor, buscar matricula ou email, se tiver aparece para selecionar carregar dados editar e deixar só atualizar lattes, se não 
-existir permitir cadastrar o servidor.
-
-
+existir permitir cadastrar o servidor. - Falta discutir das telas que o Administrador tem acesso quais vamos liberar para o Coordenador - Deixar para o final de todos os ajustes
+pois é algo simples de adicionar condicionalmente em cada página.
 
 Imagem na esquerda e quadro de avisos na direita da pagina de login
 

@@ -1,9 +1,24 @@
-//templates/home.html
 {% extends 'layout.html' %}
   
 {% block title %}Home{% endblock %}
   
 {% block content %}
-<h1 class="h2">Dashboard</h1>
-<p>Seja bem vindo, {{ nome_completo }}!</p>
+<div class="dashboard-container">
+    <h1 class="h2">Dashboard</h1>
+    <p>Seja bem-vindo, {{ nome_completo }}!</p>
+
+    <!-- Avisos -->
+    <div class="avisos-container mt-4">
+        <h3>Avisos</h3>
+        {% if avisos and avisos|length > 0 %}
+        <ul class="list-group">
+            {% for aviso in avisos %}
+            <li class="list-group-item">{{ aviso }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">Não há avisos no momento.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
