@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Gerenciar Tipos de Servidor</h2>
+
+<!-- Formulário para adicionar um novo tipo de servidor -->
+<form method="POST">
+    <div class="form-group">
+        <label for="novo_tipo">Novo Tipo de Servidor</label>
+        <input type="text" class="form-control" id="novo_tipo" name="novo_tipo" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Adicionar Tipo</button>
+</form>
+
+<!-- Exibir lista de tipos de servidor cadastrados -->
+<h3>Tipos de Servidor Cadastrados</h3>
+<ul>
+    {% for tipo in tipos_servidor %}
+        <li>
+            {{ tipo }}
+            <!-- Verificar se o tipo está em uso e não permitir exclusão se estiver -->
+            {% if tipo in tipos_em_uso %}
+                <span class="text-warning">Este tipo está em uso e não pode ser deletado.</span>
+                <form method="POST" action="{{ url_for('editar_tipo_servidor') }}" style="display:inline;">
+                    <input type="hidden" name="tipo_antigo" value="{{ tipo }}">
+                    <input type="text" name="novo_nome" value="{{ tipo }}" required>
+                    <button type="submit" class="btn btn-warning btn-sm">Editar</button>
+                </form>
+            {% else %}
+                <!-- Formulário para editar tipo de servidor -->
+                <form method="POST" action="{{ url_for('editar_tipo_servidor') }}" style="display:inline;">
+                    <input type="hidden" name="tipo_antigo" value="{{ tipo }}">
+                    <input type="text" name="novo_nome" value="{{ tipo }}" required>
+                    <button type="submit" class="btn btn-warning btn-sm">Editar</button>
+                </form>
+
+                <!-- Formulário para deletar tipo de servidor -->
+                <form method="POST" action="{{ url_for('deletar_tipo_servidor') }}" style="display:inline;">
+                    <input type="hidden" name="tipo_servidor" value="{{ tipo }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+                </form>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

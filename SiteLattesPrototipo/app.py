@@ -103,10 +103,10 @@ def login():
                 return redirect(url_for('home'))
             else:
                 # Account doesnt exist or matricula/password incorrect
-                flash('Matricula/Senha incorretos.', 'alert-warning')
+                flash('Matricula/Senha incorretos.', 'warning')
         else:
             # Account doesnt exist or matricula/password incorrect
-            flash('Matricula/Senha incorretos.', 'alert-warning')
+            flash('Matricula/Senha incorretos.', 'warning')
     
     # Checar se foi tentativa de login normal, "matricula" e "password" POST request existe (usuario submeteu o formulario)
     elif request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
@@ -142,10 +142,10 @@ def login():
                 return redirect(url_for('home'))
             else:
                 # Account doesnt exist or matricula/password incorrect
-                flash('Matricula/Senha incorretos.', 'alert-warning')
+                flash('Matricula/Senha incorretos.', 'warning')
         else:
             # Account doesnt exist or matricula/password incorrect
-            flash('Matricula/Senha incorretos.', 'alert-warning')
+            flash('Matricula/Senha incorretos.', 'warning')
  
     return render_template('login.html')
   
@@ -171,24 +171,24 @@ def register():
         print(account)
         # If account exists show error and validation checks
         if account:
-            flash('Essa conta já existe!', 'alert-danger')
+            flash('Essa conta já existe!', 'danger')
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            flash('Endereço de e-mail inválido!', 'alert-warning')
+            flash('Endereço de e-mail inválido!', 'warning')
         elif not re.match(r'^[0-9]+$', matricula):
-            flash('Matricula deve conter apenas numeros!', 'alert-warning')
+            flash('Matricula deve conter apenas numeros!', 'warning')
         elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
-            flash('Forneça um Lattes iD válido!', 'alert-warning')
+            flash('Forneça um Lattes iD válido!', 'warning')
         elif not matricula or not password or not email:
-            flash('Por favor, preencha todos os campos!', 'alert-warning')
+            flash('Por favor, preencha todos os campos!', 'warning')
         else:
             # Account doesnt exists and the form data is valid, now insert new account into users table
             cursor.execute("INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s,%s,%s,%s,%s,%s)", (fullname, matricula, _hashed_password, email, tipo_servidor, lattes_link))
             conn.commit()
-            flash('Sua conta foi registrada com sucesso!', 'alert-success')
+            flash('Sua conta foi registrada com sucesso!', 'success')
             return render_template('login.html')
     elif request.method == 'POST':
         # Form is empty... (no POST data)
-        flash('Por favor, preencha o formulário completo!', 'alert-warning')
+        flash('Por favor, preencha o formulário completo!', 'warning')
     # Show registration form with message (if any)
     return render_template('register.html')
 
@@ -212,10 +212,10 @@ def forgot_password():
             # Envia e-mail com o token para redefinição de senha
             send_password_reset_email(email, token)
 
-            flash('Um e-mail foi enviado com instruções para redefinir sua senha.', 'alert-success')
+            flash('Um e-mail foi enviado com instruções para redefinir sua senha.', 'success')
             return redirect(url_for('login'))
         else:
-            flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'alert-warning')
+            flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'warning')
             return redirect(url_for('login'))  # Adicionando o redirecionamento para a página de login
 
     return render_template('forgot_password.html')
@@ -246,14 +246,14 @@ def reset_password(token):
                 cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
                 conn.commit()
 
-                flash('Senha redefinida com sucesso.', 'alert-success')
+                flash('Senha redefinida com sucesso.', 'success')
                 return redirect(url_for('login'))
             else:
-                flash('As senhas não coincidem. Tente novamente.', 'alert-danger')
+                flash('As senhas não coincidem. Tente novamente.', 'danger')
 
         return render_template('reset_password.html', token=token)
     else:
-        flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'alert-danger')
+        flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'danger')
         return redirect(url_for('forgot_password'))
 
 @app.route('/upload_xml', methods=['POST'])
@@ -262,12 +262,12 @@ def upload_xml():
         return redirect(url_for('login'))
 
     if 'file' not in request.files:
-        flash('Nenhum arquivo foi selecionado', 'alert-warning')
+        flash('Nenhum arquivo foi selecionado', 'warning')
         return redirect(url_for('profile'))
 
     file = request.files['file']
     if file.filename == '':
-        flash('Nenhum arquivo foi selecionado', 'alert-warning')
+        flash('Nenhum arquivo foi selecionado', 'warning')
         return redirect(url_for('profile'))
 
     if file:
@@ -279,23 +279,25 @@ def upload_xml():
         try:
             etree.fromstring(xml_content)
         except etree.XMLSyntaxError as e:
-            flash('O arquivo fornecido não é um XML válido', 'alert-warning')
+            flash('O arquivo fornecido não é um XML válido', 'warning')
+            print(e)
             return redirect(url_for('profile'))
         
         try:
             # Convertendo bytes para string usando a codificação detectada
             xml_string = xml_content.decode(detected_encoding)
         except UnicodeDecodeError as e:
-            flash('Ocorreu um erro ao decodificar o arquivo', 'alert-danger')
+            flash('Ocorreu um erro ao decodificar o arquivo', 'danger')
+            print(e)
             return redirect(url_for('profile'))
 
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("UPDATE servidores SET lattes_xml = %s, ultimo_upload = current_timestamp WHERE id_servidor = %s", (xml_string, session['id']))
         conn.commit()
-        flash('Arquivo XML enviado com sucesso', 'alert-success')
+        flash('Arquivo XML enviado com sucesso', 'success')
         return redirect(url_for('profile'))
 
-    flash('Algo deu errado ao enviar o arquivo', 'alert-danger')
+    flash('Algo deu errado ao enviar o arquivo', 'danger')
     return redirect(url_for('profile'))
 
 @app.route('/logout')
@@ -396,10 +398,10 @@ def criar_evento():
     
             conn.commit()
     
-            flash('Novo evento criado com sucesso!', 'alert-success')
+            flash('Novo evento criado com sucesso!', 'success')
         except psycopg2.Error as e:
             conn.rollback()  # Realiza um rollback da transação para garantir a consistência
-            flash(f'Ocorreu um erro ao criar o evento: {str(e)}', 'alert-danger')
+            flash(f'Ocorreu um erro ao criar o evento: {str(e)}', 'danger')
             
     return redirect(url_for('eventos'))
 
@@ -413,7 +415,7 @@ def remover_evento(evento_id):
         cursor.execute("DELETE FROM eventos WHERE id_evento = %s", (evento_id,))
         conn.commit()
 
-        flash('Evento removido com sucesso!', 'alert-success')
+        flash('Evento removido com sucesso!', 'success')
         return redirect(url_for('eventos'))
 
     return redirect(url_for('eventos'))
@@ -447,10 +449,10 @@ def editar_evento(evento_id):
             """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, id_instrumento_avaliacao, evento_id))
             conn.commit()
 
-            flash('Evento atualizado com sucesso!', 'alert-success')
+            flash('Evento atualizado com sucesso!', 'success')
             return redirect(url_for('eventos'))
         except Exception as e:
-            flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'alert-danger')
+            flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
@@ -671,10 +673,10 @@ def criar_instrumento():
 
             conn.commit()
 
-            flash('Novo instrumento de avaliação criado com sucesso!', 'alert-success')
+            flash('Novo instrumento de avaliação criado com sucesso!', 'success')
         except psycopg2.Error as e:
             conn.rollback()  # Realiza um rollback da transação para garantir a consistência
-            flash(f'Ocorreu um erro ao criar o instrumento de avaliação: {str(e)}', 'alert-danger')
+            flash(f'Ocorreu um erro ao criar o instrumento de avaliação: {str(e)}', 'danger')
             
     return redirect(url_for('instrumentos_avaliacao'))
 
@@ -699,10 +701,10 @@ def editar_instrumento(instrumento_id):
             """, (nome, descricao, ativo, instrumento_id))
             conn.commit()
 
-            flash('Instrumento de avaliação atualizado com sucesso!', 'alert-success')
+            flash('Instrumento de avaliação atualizado com sucesso!', 'success')
             return redirect(url_for('instrumentos_avaliacao'))
         except Exception as e:
-            flash(f'Ocorreu um erro ao atualizar o instrumento de avaliação: {str(e)}', 'alert-danger')
+            flash(f'Ocorreu um erro ao atualizar o instrumento de avaliação: {str(e)}', 'danger')
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute("SELECT * FROM instrumentos_avaliacao WHERE id_instrumento_avaliacao = %s", (instrumento_id,))
@@ -720,7 +722,7 @@ def remover_instrumento(instrumento_id):
     cursor.execute("DELETE FROM instrumentos_avaliacao WHERE id_instrumento_avaliacao = %s", (instrumento_id,))
     conn.commit()
 
-    flash('Instrumento de avaliação removido com sucesso!', 'alert-success')
+    flash('Instrumento de avaliação removido com sucesso!', 'success')
     return redirect(url_for('instrumentos_avaliacao'))
 
 @app.route('/criterios', methods=['GET'])
@@ -1018,11 +1020,11 @@ def registrar_servidor():
 
         # Validações para cada campo
         if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            flash('Endereço de e-mail inválido!', 'alert-warning')
+            flash('Endereço de e-mail inválido!', 'warning')
         elif not re.match(r'^[0-9]+$', matricula):
-            flash('Matrícula deve conter apenas números!', 'alert-warning')
+            flash('Matrícula deve conter apenas números!', 'warning')
         elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
-            flash('Lattes ID inválido!', 'alert-warning')
+            flash('Lattes ID inválido!', 'warning')
         else:
             # Se todos os dados forem válidos, insira no banco de dados
             _hashed_password = generate_password_hash(password)
@@ -1031,7 +1033,7 @@ def registrar_servidor():
                 (fullname.upper(), matricula, _hashed_password, email, tipo_servidor, lattes_link)
             )
             conn.commit()
-            flash('Servidor registrado com sucesso!', 'alert-success')
+            flash('Servidor registrado com sucesso!', 'success')
             return redirect(url_for('listar_servidores'))
 
     return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
@@ -1090,10 +1092,174 @@ def editar_servidor(id):
         """, (fullname, matricula, email, tipo_servidor, lattes_link, id))
         
         conn.commit()
-        flash('Servidor atualizado com sucesso!', 'alert-success')
+        flash('Servidor atualizado com sucesso!', 'success')
         return redirect(url_for('listar_servidores'))
     
     return render_template('editar_servidor.html', servidor=servidor, tipos_servidor=tipos_servidor)
+
+
+def verificar_tipo_em_uso(tipo, tipo_table, tipo_coluna):
+    cursor = conn.cursor()
+    # Utiliza parâmetros para construir a query de forma dinâmica e mais segura
+    query = f"SELECT COUNT(*) FROM {tipo_table} WHERE {tipo_coluna} = %s"
+    cursor.execute(query, (tipo,))
+    count = cursor.fetchone()[0]
+    # Retorna True se o tipo estiver em uso, caso contrário, False
+    return count > 0
+
+@app.route('/tipos_evento', methods=['GET', 'POST'])
+def tipos_evento():
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Listar tipos de evento
+    cursor.execute("SELECT unnest(enum_range(NULL::type_evento)) AS tipo_evento")
+    tipos_evento = [row['tipo_evento'] for row in cursor.fetchall()]
+
+    if request.method == 'POST':
+        novo_tipo = request.form['novo_tipo']
+        # Adiciona o novo tipo ao ENUM, mantendo os existentes
+        cursor.execute("ALTER TYPE type_evento ADD VALUE IF NOT EXISTS %s", (novo_tipo,))
+        conn.commit()
+        flash('Tipo de evento adicionado com sucesso!', 'success')
+        return redirect(url_for('tipos_evento'))
+
+    return render_template('tipos_evento.html', tipos_evento=tipos_evento)
+
+
+@app.route('/editar_tipo_evento', methods=['POST'])
+def editar_tipo_evento():
+    novo_nome = request.form['novo_nome']
+    tipo_antigo = request.form['tipo_antigo']
+
+    cursor = conn.cursor()
+    cursor.execute("ALTER TYPE type_evento RENAME VALUE %s TO %s", (tipo_antigo, novo_nome))
+    conn.commit()
+    flash('Tipo de evento atualizado com sucesso!', 'success')
+    return redirect(url_for('tipos_evento'))
+
+
+@app.route('/deletar_tipo_evento', methods=['POST'])
+def deletar_tipo_evento():
+    tipo_evento_valor = request.form['tipo_evento']  # Este é o valor do tipo que está sendo excluído
+    tipo_evento = 'type_evento'  # Nome real do tipo ENUM no banco de dados
+    cursor = conn.cursor()
+
+    # Verificar se o tipo de evento está em uso na tabela de eventos
+    if verificar_tipo_em_uso(tipo_evento_valor, 'eventos', 'tipo_evento'):
+        flash(f'O tipo de evento "{tipo_evento_valor}" está em uso. Não é possível deletá-lo diretamente. Por favor, atualize os registros antes de tentar novamente.', 'danger')
+        return redirect(url_for('tipos_evento'))
+
+    # Obter os valores do tipo ENUM existente
+    cursor.execute(f"SELECT unnest(enum_range(NULL::{tipo_evento}))")
+    valores_tipo_evento = cursor.fetchall()
+    valores_tipo_evento = [v[0] for v in valores_tipo_evento]  # Extrair os valores da tupla
+
+    # Remover o tipo que estamos deletando da lista de valores
+    valores_tipo_evento = [v for v in valores_tipo_evento if v != tipo_evento_valor]
+
+    # Criar o novo tipo ENUM com os valores restantes
+    novo_tipo = f"{tipo_evento}_temp"
+    novo_tipo_valores = ', '.join([f"'{v}'" for v in valores_tipo_evento])
+    cursor.execute(f"CREATE TYPE {novo_tipo} AS ENUM ({novo_tipo_valores})")
+    conn.commit()
+
+    # Alterar a tabela de eventos para usar o novo tipo (sem remover o tipo antigo ainda)
+    cursor.execute(f"ALTER TABLE eventos ALTER COLUMN tipo_evento TYPE {novo_tipo} USING tipo_evento::text::{novo_tipo}")
+    conn.commit()
+
+    # Dropar o tipo antigo
+    cursor.execute(f"DROP TYPE {tipo_evento}")
+    conn.commit()
+
+    # Renomear o tipo novo para o nome do tipo original
+    cursor.execute(f"ALTER TYPE {novo_tipo} RENAME TO {tipo_evento}")
+    conn.commit()
+
+    flash('Tipo de evento deletado com sucesso!', 'success')
+    return redirect(url_for('tipos_evento'))
+
+
+@app.route('/tipos_servidor', methods=['GET', 'POST'])
+def tipos_servidor():
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Listar tipos de servidor
+    cursor.execute("SELECT unnest(enum_range(NULL::type_servidor)) AS tipo_servidor")
+    tipos_servidor = [row['tipo_servidor'] for row in cursor.fetchall()]
+
+    if request.method == 'POST':
+        novo_tipo = request.form['novo_tipo']
+        try:
+            # Adiciona o novo tipo ao ENUM, mantendo os existentes
+            cursor.execute("ALTER TYPE type_servidor ADD VALUE IF NOT EXISTS %s", (novo_tipo,))
+            conn.commit()
+            flash('Tipo de servidor adicionado com sucesso!', 'success')
+        except Exception as e:
+            flash(f"Erro ao adicionar tipo de servidor: {str(e)}", 'danger')
+        return redirect(url_for('tipos_servidor'))
+
+    return render_template('tipos_servidor.html', tipos_servidor=tipos_servidor)
+
+
+@app.route('/editar_tipo_servidor', methods=['POST'])
+def editar_tipo_servidor():
+    novo_nome = request.form['novo_nome']
+    tipo_antigo = request.form['tipo_antigo']
+
+    cursor = conn.cursor()
+    try:
+        # Renomeia o valor do tipo ENUM
+        cursor.execute("ALTER TYPE type_servidor RENAME VALUE %s TO %s", (tipo_antigo, novo_nome))
+        conn.commit()
+        flash('Tipo de servidor atualizado com sucesso!', 'success')
+    except Exception as e:
+        flash(f"Erro ao atualizar tipo de servidor: {str(e)}", 'danger')
+    return redirect(url_for('tipos_servidor'))
+
+
+@app.route('/deletar_tipo_servidor', methods=['POST'])
+def deletar_tipo_servidor():
+    tipo_servidor_valor = request.form['tipo_servidor']  # Este é o valor do tipo que está sendo excluído
+    tipo_servidor = 'type_servidor'  # Nome real do tipo ENUM no banco de dados
+    cursor = conn.cursor()
+
+    # Verificar se o tipo de servidor está em uso na tabela de servidores
+    try:
+        if verificar_tipo_em_uso(tipo_servidor_valor, 'servidores', 'tipo_servidor'):
+            flash(f'O tipo de servidor "{tipo_servidor_valor}" está em uso. Não é possível deletá-lo diretamente. Por favor, atualize os registros antes de tentar novamente.', 'danger')
+            return redirect(url_for('tipos_servidor'))
+
+        # Obter os valores do tipo ENUM existente
+        cursor.execute(f"SELECT unnest(enum_range(NULL::{tipo_servidor}))")
+        valores_tipo_servidor = cursor.fetchall()
+        valores_tipo_servidor = [v[0] for v in valores_tipo_servidor]  # Extrair os valores da tupla
+
+        # Remover o tipo que estamos deletando da lista de valores
+        valores_tipo_servidor = [v for v in valores_tipo_servidor if v != tipo_servidor_valor]
+
+        # Criar o novo tipo ENUM com os valores restantes
+        novo_tipo = f"{tipo_servidor}_temp"
+        novo_tipo_valores = ', '.join([f"'{v}'" for v in valores_tipo_servidor])
+        cursor.execute(f"CREATE TYPE {novo_tipo} AS ENUM ({novo_tipo_valores})")
+        conn.commit()
+
+        # Alterar a tabela de servidores para usar o novo tipo (sem remover o tipo antigo ainda)
+        cursor.execute(f"ALTER TABLE servidores ALTER COLUMN tipo_servidor TYPE {novo_tipo} USING tipo_servidor::text::{novo_tipo}")
+        conn.commit()
+
+        # Dropar o tipo antigo
+        cursor.execute(f"DROP TYPE {tipo_servidor}")
+        conn.commit()
+
+        # Renomear o tipo novo para o nome do tipo original
+        cursor.execute(f"ALTER TYPE {novo_tipo} RENAME TO {tipo_servidor}")
+        conn.commit()
+
+        flash('Tipo de servidor deletado com sucesso!', 'success')
+    except Exception as e:
+        flash(f"Erro ao deletar tipo de servidor: {str(e)}", 'danger')
+
+    return redirect(url_for('tipos_servidor'))
 
 
 if __name__ == "__main__":

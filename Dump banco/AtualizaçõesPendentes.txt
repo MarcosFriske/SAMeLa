@@ -1,19 +1,24 @@
 descrição do sistema e tela de login reutilizar - ainda não fiz a descrição do sistema
 
-criar tela de critérios, e criar tela de associação de critérios - feito, mas talvez precise separar a associação de critério e instrumento em uma tabela a parte.
-criar tabela de relacionamento de critérios e instrumentos de avaliação
+criar tela de critérios, e criar tela de associação de critérios - feito
 
-Cadastro de servidores via administrador, botar role, admin, docente, coord de evento etc - Feito, falta trocar o nome das roles do type_servidor
+criar tabela de relacionamento de critérios e instrumentos de avaliação - feito
+
+Puxar a pesquisa de critérios para a tela que mostra todos os critérios e remover a associação dessa tela. - feito
+
+Cadastro de servidores via administrador, botar role, admin, docente, coord de evento etc - Feito
 
 Mandar e-mail, avisando da criação da conta com senha temporária para acessar e necessidade de atualizar a senha. - Fizemos testes e estava enviando certinho o e-mail
 
+Atualizar tabela eventos, com data inicio e fim inscrição evento - ok
 
+botão desescrever evento, alterar para lixeira - ok
 
 
 BOAS PRATICAS BANCO
 https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/edit?usp=sharing
 
-Puxar a pesquisa de critérios para a tela que mostra todos os critérios e remover a associação dessa tela.
+
 
 
 
@@ -22,10 +27,6 @@ tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTT
 planilha de resultados - utilizar template de excel, para manter no padrão da planilha de avaliação, relatório pdf protegido baseado no cabeçalho e dados do anexo
 
 Gerar lista de todos inscritos no evento e pontuação para administrador - página do site
-
-Atualizar tabela eventos, com data inicio e fim inscrição evento - ok
-
-botão desescrever evento, alterar para lixeira
 
 
 Permitir atualização de tipos no banco de dados, tipo evento e tipo servidor - alter type

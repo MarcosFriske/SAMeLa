@@ -22,9 +22,13 @@
                             <td>{{ evento.data_avaliacao.strftime('%d/%m/%Y %H:%M:%S') }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <!-- Alteração na linha abaixo -->
+                                    <!-- Botão para ver avaliação -->
                                     <a href="{{ url_for('detalhes_avaliacao', avaliacao_id=evento.id_avaliacao) }}" class="btn btn-primary btn-sm">Ver Avaliação</a>
-                                    <a href="#" onclick="desinscreverEvento('{{ evento.id_avaliacao }}')" class="btn btn-danger btn-sm">Desinscrever</a>
+                                    
+                                    <!-- Ícone de lixeira para desinscrever -->
+                                    <a href="#" onclick="desinscreverEvento('{{ evento.id_avaliacao }}')" class="btn btn-danger btn-sm" title="Desinscrever">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
