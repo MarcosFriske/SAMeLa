@@ -21,7 +21,7 @@
             border-bottom: 1px solid #ddd;
         }
         .logo-container img {
-            height: 50px;
+            height: 70px; /* Aumentado o tamanho das imagens */
             max-height: 100%;
         }
         .container {
@@ -31,12 +31,12 @@
             min-height: calc(100vh - 80px);
             padding: 20px;
         }
-        .left-column, .right-column {
-            flex: 1;
+        .left-column {
+            flex: 0 0 35%;
             padding: 20px;
         }
         .center-column {
-            flex: 2;
+            flex: 0 0 35%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -45,6 +45,10 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             background-color: #ffffff;
+        }
+        .right-column {
+            flex: 0 0 30%;
+            padding: 20px;
         }
         .login-box {
             width: 100%;
@@ -70,6 +74,24 @@
         .pagination {
             justify-content: center;
         }
+        .pagination a, .pagination span {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #007bff;
+            border: 1px solid #007bff;
+            font-size: 16px;
+        }
+        .pagination a:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .pagination .current {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -84,8 +106,12 @@
 
     <div class="container">
         <div class="left-column">
-            <h2>Bem-vindo ao SAMeLa</h2>
-            <p>O Sistema de Automação de Mensagens e Login (SAMeLa) facilita o gerenciamento de autenticação e avisos para os usuários. Entre com sua matrícula ou e-mail e senha para acessar a plataforma.</p>
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 p-4">
+                    <h2>Bem-vindo ao SAMeLa</h2>
+                    <p>O SAMeLa (Sistema de Avaliação de Mérito do Lattes) é uma plataforma inovadora desenvolvida para otimizar a análise do mérito curricular dos pesquisadores do Instituto Federal Catarinense (IFC). Por meio da integração automática com os Currículos Lattes (CL), o sistema realiza a extração de dados e os cruza com a tabela Qualis, identificando inconsistências e gerando uma pontuação mais precisa e confiável. Com a automação desses processos, o SAMeLa facilita o trabalho dos coordenadores de Pesquisa, tornando a gestão acadêmica mais ágil e eficiente.</p>
+                </div>
+            </div>
         </div>
 
         <div class="center-column">
