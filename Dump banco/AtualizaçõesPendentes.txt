@@ -1,4 +1,4 @@
-descrição do sistema e tela de login reutilizar - ainda não fiz a descrição do sistema
+descrição do sistema e tela de login reutilizar - feito
 
 criar tela de critérios, e criar tela de associação de critérios - feito
 
