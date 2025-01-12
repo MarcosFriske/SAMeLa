@@ -26,7 +26,9 @@ https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/
 
 
 
-fk_id_instrumento_avaliacao - Ajustar pois essa coluna não existe mais, agora é da tabela de relacionamentos.
+fk_id_instrumento_avaliacao - Ajustar pois essa coluna não existe mais, agora é da tabela de relacionamentos. - Correções aplicadas
+
+
 
 tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia.
 

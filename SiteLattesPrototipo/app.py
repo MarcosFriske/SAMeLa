@@ -455,8 +455,9 @@ def editar_evento(evento_id):
             data_fim = request.form['data_fim']
             localizacao = request.form['localizacao']
             descricao = request.form['descricao']
-            id_instrumento_avaliacao = request.form['fk_id_instrumento_avaliacao']
+            criterios_selecionados = request.form.getlist('criterios')  # Recebe os IDs dos critérios selecionados
 
+            # Atualizando os dados básicos do evento
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE eventos 
@@ -465,10 +466,18 @@ def editar_evento(evento_id):
                     data_inicio = %s, 
                     data_fim = %s, 
                     localizacao = %s, 
-                    descricao = %s, 
-                    fk_id_instrumento_avaliacao = %s 
+                    descricao = %s 
                 WHERE id_evento = %s
-            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, id_instrumento_avaliacao, evento_id))
+            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, evento_id))
+            conn.commit()
+            
+            # Atualizando as associações de critérios (removendo as antigas e adicionando as novas)
+            cursor.execute("DELETE FROM rel_eventos_criterios WHERE id_evento = %s", (evento_id,))
+            for criterio_id in criterios_selecionados:
+                cursor.execute("""
+                    INSERT INTO rel_eventos_criterios (id_evento, id_criterio) 
+                    VALUES (%s, %s)
+                """, (evento_id, criterio_id))
             conn.commit()
 
             flash('Evento atualizado com sucesso!', 'success')
@@ -476,18 +485,41 @@ def editar_evento(evento_id):
         except Exception as e:
             flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
+    # Carregando os dados do evento
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
     evento = cursor.fetchone()
+    
+    # Carregando os instrumentos de avaliação e critérios associados
+    cursor.execute("""
+        SELECT c.id_criterio, c.criterio, i.nome_instrumento
+        FROM criterios c
+        JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
+        JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
+        WHERE c.ativo = TRUE
+        ORDER BY i.nome_instrumento, c.criterio
+    """)
+    criterios_disponiveis = cursor.fetchall()
 
-    cursor.execute('SELECT * FROM instrumentos_avaliacao')
-    instrumentos = cursor.fetchall()
+    # Carregando os critérios já associados ao evento
+    cursor.execute("""
+        SELECT id_criterio 
+        FROM rel_eventos_criterios 
+        WHERE id_evento = %s
+    """, (evento_id,))
+    criterios_associados = [row['id_criterio'] for row in cursor.fetchall()]
 
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    # Carregando os tipos de evento
     cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
     tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
-    return render_template('editar_evento.html', evento=evento, instrumentos=instrumentos, tipos_evento=tipos_evento)
+    return render_template(
+        'editar_evento.html', 
+        evento=evento, 
+        criterios_disponiveis=criterios_disponiveis, 
+        criterios_associados=criterios_associados, 
+        tipos_evento=tipos_evento
+    )
 
 @app.route('/inscrever_evento', methods=['POST'])
 def inscrever_evento():
@@ -541,9 +573,18 @@ def inscrever_evento():
                 flash('Erro ao obter o ID da avaliação.', 'danger')
                 return redirect(url_for('eventos'))
             
+            # Obter o ID do instrumento de avaliação a partir da nova tabela
             cursor.execute(
-                'SELECT fk_id_instrumento_avaliacao FROM eventos WHERE id_evento = %s',
-                (evento_id)
+                '''
+                SELECT id_instrumento_avaliacao 
+                FROM rel_criterios_instrumentos 
+                WHERE id_instrumento_avaliacao = (
+                    SELECT fk_id_instrumento_avaliacao 
+                    FROM eventos 
+                    WHERE id_evento = %s
+                )
+                ''',
+                (evento_id,)
             )
             id_instrumento_avaliacao_result = cursor.fetchone()
             
@@ -1006,15 +1047,18 @@ def remover_associacao_criterio_instrumento(id_relacao):
     flash('Associação removida com sucesso!', 'success')
     return redirect(request.referrer)
 
-
+    
 @app.route('/instrumentos_criterios/<int:instrumento_id>')
 def instrumentos_criterios(instrumento_id):
     if 'loggedin' in session and session['role'] == 'Administrador':
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cursor.execute("""
-            SELECT c.criterio, c.qtd_maxima_itens, c.pontuacao_item, c.xpath_criterio_lattes, c.considera_qualis, c.ativo 
+            SELECT c.criterio, c.qtd_maxima_itens, c.pontuacao_item, c.xpath_criterio_lattes, 
+                   c.considera_qualis, c.ativo 
             FROM criterios c
-            WHERE c.fk_id_instrumento_avaliacao = %s
+            INNER JOIN rel_criterios_instrumentos rci 
+                ON c.id_criterio = rci.id_criterio
+            WHERE rci.id_instrumento_avaliacao = %s
         """, (instrumento_id,))
         criterios = cursor.fetchall()
 

@@ -28,12 +28,25 @@
             <label for="descricao">Descrição:</label><br>
             <textarea id="descricao" name="descricao" required>{{ evento.descricao }}</textarea><br>
 
-            <label for="fk_id_instrumento_avaliacao">Nome do Instrumento de Avaliação:</label><br>
-            <select id="fk_id_instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
+            <label for="instrumento_avaliacao">Instrumento de Avaliação:</label><br>
+            <select id="instrumento_avaliacao" name="instrumento_avaliacao">
                 {% for instrumento in instrumentos %}
-                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if evento.fk_id_instrumento_avaliacao == instrumento.id_instrumento_avaliacao %} selected {% endif %}>{{ instrumento.nome }}</option>
+                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if instrumento.id_instrumento_avaliacao in evento.instrumentos_associados %} selected {% endif %}>
+                        {{ instrumento.nome }}
+                    </option>
                 {% endfor %}
             </select><br>
+            
+            <label for="criterios">Critérios Associados:</label><br>
+            <ul>
+                {% for criterio in criterios %}
+                    <li>
+                        <input type="checkbox" id="criterio_{{ criterio.id_criterio }}" name="criterios[]" value="{{ criterio.id_criterio }}"
+                               {% if criterio.id_criterio in evento.criterios_associados %} checked {% endif %}>
+                        <label for="criterio_{{ criterio.id_criterio }}">{{ criterio.criterio }}</label>
+                    </li>
+                {% endfor %}
+            </ul>
 
             <input type="submit" value="Atualizar Evento">
         </form>
