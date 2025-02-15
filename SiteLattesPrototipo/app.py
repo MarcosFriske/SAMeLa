@@ -357,20 +357,25 @@ def profile():
 @app.route('/eventos')
 def eventos():
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute('SELECT * FROM eventos WHERE ativo = true ORDER BY data_fim ASC')
+    
+    # Ajustando a query para filtrar eventos cujo data_fim ainda não passou
+    cursor.execute("""
+        SELECT * FROM eventos 
+        WHERE ativo = true 
+        AND data_fim >= CURRENT_DATE
+        ORDER BY data_fim ASC
+    """)
     eventos = cursor.fetchall()
     
     cursor.execute('SELECT * FROM instrumentos_avaliacao')
     instrumentos = cursor.fetchall()
     
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
     tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
-    # Verifique se o usuário está logado
     if 'loggedin' in session:
         return render_template('eventos.html', eventos=eventos, user_role=session['role'], instrumentos=instrumentos, tipos_evento=tipos_evento, eventos_ativos=bool(eventos))
-    # Caso contrário, redirecione para a página de login
+
     return redirect(url_for('login'))
 
 @app.route('/avaliacoes')
