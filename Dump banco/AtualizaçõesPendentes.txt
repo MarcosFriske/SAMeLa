@@ -27,6 +27,7 @@ https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/
 
 
 fk_id_instrumento_avaliacao - Ajustar pois essa coluna não existe mais, agora é da tabela de relacionamentos. - Correções aplicadas
+Ajustado bug que estava fazendo eventos expirados aparecerem. - Feito
 
 
 

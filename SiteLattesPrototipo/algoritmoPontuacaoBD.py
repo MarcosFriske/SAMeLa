@@ -32,11 +32,17 @@ def __selecionar_criterios_avaliacao(instrumento_avaliacao):
                                       port=port_db,
                                       database=database_name)
         cursor = connection.cursor()
-        postgres_select_query = """SELECT * FROM public.criterios
-                                   WHERE ativo = true AND fk_id_instrumento_avaliacao = %s
-                                   ORDER BY id_criterio"""
-        instrumento_avaliacao_select = (instrumento_avaliacao)
-        cursor.execute(postgres_select_query, instrumento_avaliacao_select)
+
+        postgres_select_query = """
+            SELECT c.id_criterio, c.criterio, c.qtd_maxima_itens, c.pontuacao_item, c.xpath_criterio_lattes, 
+                   c.considera_qualis, c.ativo
+            FROM criterios c
+            JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
+            WHERE rci.id_instrumento_avaliacao = %s AND c.ativo = TRUE AND rci.ativo = TRUE
+            ORDER BY c.criterio
+        """
+        cursor.execute(postgres_select_query, (instrumento_avaliacao,))
+
         rows = cursor.fetchall()
         if rows:
             df = pd.DataFrame(rows, columns=[desc[0] for desc in cursor.description])
@@ -45,10 +51,10 @@ def __selecionar_criterios_avaliacao(instrumento_avaliacao):
         else:
             print("No rows found")
             return None
+
     except (Exception, psycopg2.Error) as error:
         print("Failed to select records from Criterios table", error)
     finally:
-        # closing database connection.
         if connection:
             cursor.close()
             connection.close()
