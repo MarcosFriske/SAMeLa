@@ -1,5 +1,5 @@
 import openpyxl
-from openpyxl.styles import Alignment, Font, Border, PatternFill
+from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from copy import copy
 
 print("\U0001F680 Iniciando processamento...")
@@ -45,9 +45,14 @@ print(f"✅ Linha inicial encontrada na linha {linha_inicial}.")
 
 # Lista de critérios
 criterios = [
-    {"NUMERO": 3, "CRITERIO": "Titulação - Doutorado", "PONTOS": 25, "MAX_ITENS": 2, "TOTAL_MAX": 1},
-    {"NUMERO": 4, "CRITERIO": "Livro com ISBN", "PONTOS": 8, "MAX_ITENS": 40, "TOTAL_MAX": 40},
+    {"NUMERO": 1, "CRITERIO": "Titulação - Doutorado", "PONTOS": 25, "MAX_ITENS": 2, "TOTAL_MAX": 1},
+    {"NUMERO": 2, "CRITERIO": "Livro com ISBN", "PONTOS": 8, "MAX_ITENS": 40, "TOTAL_MAX": 40},
+    {"NUMERO": 3, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 4, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
     {"NUMERO": 5, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 6, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 7, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 8, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
 ]
 
 qtd_novas_linhas = len(criterios)
@@ -126,6 +131,32 @@ for linha in linhas_a_mesclar:
     ws.cell(row=linha, column=1).alignment = Alignment(horizontal="left", vertical="top")
 
 print("✅ Células abaixo do somatório mescladas corretamente!")
+
+
+# Definição de bordas destacadas
+borda_destaque = Border(
+    left=Side(style="thin"),
+    right=Side(style="thin"),
+    top=Side(style="thin"),
+    bottom=Side(style="thin")
+)
+
+# Mesclar e destacar a linha acima do texto "Entende-se por Evento Internacional..."
+linha_acima_evento = linha_somatorio + 1
+ws.merge_cells(start_row=linha_acima_evento, start_column=1, end_row=linha_acima_evento, end_column=6)
+celula_acima_evento = ws.cell(row=linha_acima_evento, column=1)
+celula_acima_evento.alignment = Alignment(horizontal="center", vertical="center")
+celula_acima_evento.border = borda_destaque
+
+# Destacar a linha com o texto "Entende-se por Evento Internacional..."
+linha_evento = linha_acima_evento + 1
+for col in range(1, 7):
+    ws.cell(row=linha_evento, column=col).border = borda_destaque
+
+# Destacar a linha abaixo do texto
+linha_abaixo_evento = linha_evento + 1
+for col in range(1, 7):
+    ws.cell(row=linha_abaixo_evento, column=col).border = borda_destaque
 
 # Remover linhas vazias extras
 print("🗑️ Removendo linhas vazias...")

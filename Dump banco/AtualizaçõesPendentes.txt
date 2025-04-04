@@ -33,9 +33,19 @@ Ajustado bug que estava fazendo eventos expirados aparecerem. - Feito
 
 tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia.
 
+Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostrar isso na pagina do usuario
+E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses.
+
+Adicionar coluna data_ultima_atualizacao_lattes a tabela servidores
+
+
+
 planilha de resultados - utilizar template de excel, para manter no padrão da planilha de avaliação, relatório pdf protegido baseado no cabeçalho e dados do anexo
 
 Gerar lista de todos inscritos no evento e pontuação para administrador - página do site
+
+Nome do servidor - Pontuação total
+Em PDF.
 
 
 
