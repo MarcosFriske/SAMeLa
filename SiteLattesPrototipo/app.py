@@ -294,29 +294,58 @@ def upload_xml():
 
     if file:
         xml_content = file.read()
-        
-        # Detecta a codificação correta do arquivo
+
+        # Detectar codificação do arquivo
         detected_encoding = chardet.detect(xml_content)['encoding']
+        print(f"📄 Codificação detectada: {detected_encoding}")
 
         try:
-            etree.fromstring(xml_content)
-        except etree.XMLSyntaxError as e:
-            flash('O arquivo fornecido não é um XML válido', 'warning')
-            print(e)
-            return redirect(url_for('profile'))
-        
-        try:
-            # Convertendo bytes para string usando a codificação detectada
+            # Decodificar XML e verificar se é válido
             xml_string = xml_content.decode(detected_encoding)
-        except UnicodeDecodeError as e:
-            flash('Ocorreu um erro ao decodificar o arquivo', 'danger')
-            print(e)
+            root = etree.fromstring(xml_string.encode('utf-8'))
+        except (UnicodeDecodeError, etree.XMLSyntaxError) as e:
+            flash('Erro ao processar o XML', 'danger')
+            print(f"❌ Erro ao processar XML: {e}")
             return redirect(url_for('profile'))
 
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute("UPDATE servidores SET lattes_xml = %s, ultimo_upload = current_timestamp WHERE id_servidor = %s", (xml_string, session['id']))
-        conn.commit()
-        flash('Arquivo XML enviado com sucesso', 'success')
+        # Extrair data e hora do XML
+        data_attr = root.attrib.get("DATA-ATUALIZACAO")
+        hora_attr = root.attrib.get("HORA-ATUALIZACAO")
+
+        if not data_attr or not hora_attr:
+            flash('Não foi possível encontrar a data/hora de atualização no XML', 'warning')
+            print("⚠️ DATA-ATUALIZACAO ou HORA-ATUALIZACAO não encontrados")
+            return redirect(url_for('profile'))
+
+        print(f"📅 DATA-ATUALIZACAO: {data_attr} | 🕒 HORA-ATUALIZACAO: {hora_attr}")
+
+        try:
+            # Converter string "12022023" + "190416" para datetime
+            data_hora_lattes = datetime.strptime(data_attr + hora_attr, "%d%m%Y%H%M%S")
+            print(f"✅ Timestamp convertido: {data_hora_lattes}")
+        except ValueError as e:
+            flash('Formato de data/hora inválido no XML', 'danger')
+            print(f"❌ Erro ao converter data/hora: {e}")
+            return redirect(url_for('profile'))
+
+        # Atualizar o banco de dados
+        try:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cursor.execute("""
+                UPDATE servidores
+                SET lattes_xml = %s,
+                    ultimo_upload = current_timestamp,
+                    data_ultima_atualizacao_lattes = %s
+                WHERE id_servidor = %s
+            """, (xml_string, data_hora_lattes, session['id']))
+            conn.commit()
+            cursor.close()
+            flash('Arquivo XML enviado com sucesso', 'success')
+        except Exception as e:
+            flash('Erro ao salvar os dados no banco', 'danger')
+            print(f"❌ Erro no banco de dados: {e}")
+            return redirect(url_for('profile'))
+
         return redirect(url_for('profile'))
 
     flash('Algo deu errado ao enviar o arquivo', 'danger')
