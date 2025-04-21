@@ -23,20 +23,18 @@ BOAS PRATICAS BANCO
 https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/edit?usp=sharing
 
 
-
-
-
 fk_id_instrumento_avaliacao - Ajustar pois essa coluna não existe mais, agora é da tabela de relacionamentos. - Correções aplicadas
 Ajustado bug que estava fazendo eventos expirados aparecerem. - Feito
 
+Adicionar coluna data_ultima_atualizacao_lattes a tabela servidores - feito
+
+tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia. - Reconsiderado
+
+Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostrar isso na pagina do usuario - Feito e bonus de aviso quando estiver desatualizado por mais de 6 meses.
 
 
-tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia.
-
-Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostrar isso na pagina do usuario
 E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses.
 
-Adicionar coluna data_ultima_atualizacao_lattes a tabela servidores
 
 
 

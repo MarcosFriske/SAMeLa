@@ -12,7 +12,7 @@
                 <td>{{ account['nome'] }}</td>
             </tr>
             <tr>
-                <th>Matricula:</th>
+                <th>Matrícula:</th>
                 <td>{{ account['matricula'] }}</td>
             </tr>
             <tr>
@@ -28,6 +28,24 @@
                         Nenhum XML foi enviado ainda.
                     {% endif %}
                 </td>                
+            </tr>
+            <tr>
+                <th>Data da Última Atualização no Lattes:</th>
+                <td>
+                    {% if account['data_ultima_atualizacao_lattes'] %}
+                        {{ account['data_ultima_atualizacao_lattes'].strftime('%d/%m/%Y %H:%M:%S') }}
+                        {% set meses_diff = ((now - account['data_ultima_atualizacao_lattes']).days) // 30 %}
+                        {% if meses_diff > 6 %}
+                            <div class="alert alert-warning mt-2" role="alert">
+                                Atenção: seu currículo Lattes está desatualizado ({{ meses_diff }} meses). 
+                                Muitos eventos exigem atualização nos últimos 6 meses. 
+                                Considere atualizar seu currículo e reenviar o XML.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        Nenhum dado de atualização do Lattes foi encontrado no XML.
+                    {% endif %}
+                </td>
             </tr>
         </table>
     </div>

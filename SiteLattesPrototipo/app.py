@@ -379,7 +379,8 @@ def profile():
         cursor.execute('SELECT * FROM servidores WHERE id_servidor = %s', [session['id']])
         account = cursor.fetchone()
         # Show the profile page with account info
-        return render_template('profile.html', account=account)
+        return render_template('profile.html', account=account, now=datetime.now())
+    
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
