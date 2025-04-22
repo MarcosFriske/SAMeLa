@@ -88,60 +88,64 @@ def home():
  
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    # Login com Lembre-me (Cookies)
-    if 'matricula' in request.cookies:
-        matricula = request.cookies.get('matricula')
-        password = request.cookies.get('senha')
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
-        account = cursor.fetchone()
-        
-        if account:
-            password_rs = account['senha']
-            if check_password_hash(password_rs, password):
-                session['loggedin'] = True
-                session['id'] = account['id_servidor']
-                session['matricula'] = account['matricula']
-                session['senha'] = account['senha']
-                session['nome_completo'] = account['nome']
-                session['role'] = account['tipo_servidor']
-                return redirect(url_for('home'))
-            else:
-                flash('Matricula/Senha incorretos.', 'warning')
-        else:
-            flash('Matricula/Senha incorretos.', 'warning')
-    
-    elif request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
-        matricula = request.form['matricula']
-        password = request.form['password']
-        remember = True if request.form.get('remember') else False
-        
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
-        account = cursor.fetchone()
-        
-        if account:
-            password_rs = account['senha']
-            if check_password_hash(password_rs, password):
-                session['loggedin'] = True
-                session['id'] = account['id_servidor']
-                session['matricula'] = account['matricula']
-                session['senha'] = account['senha']
-                session['nome_completo'] = account['nome']
-                session['role'] = account['tipo_servidor']
+    try:
+        # Login com Lembre-me (Cookies)
+        if 'matricula' in request.cookies:
+            matricula = request.cookies.get('matricula')
+            password = request.cookies.get('senha')
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
+                account = cursor.fetchone()
                 
-                if remember:
-                    resp = make_response(redirect(url_for('home')))
-                    resp.set_cookie('matricula', matricula, max_age=COOKIE_TIME_OUT)
-                    resp.set_cookie('senha', password, max_age=COOKIE_TIME_OUT)
-                    resp.set_cookie('remember', 'checked', max_age=COOKIE_TIME_OUT)
-                    return resp
-                return redirect(url_for('home'))
+            if account:
+                password_rs = account['senha']
+                if check_password_hash(password_rs, password):
+                    session['loggedin'] = True
+                    session['id'] = account['id_servidor']
+                    session['matricula'] = account['matricula']
+                    session['senha'] = account['senha']
+                    session['nome_completo'] = account['nome']
+                    session['role'] = account['tipo_servidor']
+                    return redirect(url_for('home'))
+                else:
+                    flash('Matricula/Senha incorretos.', 'warning')
             else:
                 flash('Matricula/Senha incorretos.', 'warning')
-        else:
-            flash('Matricula/Senha incorretos.', 'warning')
 
+        elif request.method == 'POST' and 'matricula' in request.form and 'password' in request.form:
+            matricula = request.form['matricula']
+            password = request.form['password']
+            remember = True if request.form.get('remember') else False
+
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
+                account = cursor.fetchone()
+
+            if account:
+                password_rs = account['senha']
+                if check_password_hash(password_rs, password):
+                    session['loggedin'] = True
+                    session['id'] = account['id_servidor']
+                    session['matricula'] = account['matricula']
+                    session['senha'] = account['senha']
+                    session['nome_completo'] = account['nome']
+                    session['role'] = account['tipo_servidor']
+
+                    if remember:
+                        resp = make_response(redirect(url_for('home')))
+                        resp.set_cookie('matricula', matricula, max_age=COOKIE_TIME_OUT)
+                        resp.set_cookie('senha', password, max_age=COOKIE_TIME_OUT)
+                        resp.set_cookie('remember', 'checked', max_age=COOKIE_TIME_OUT)
+                        return resp
+                    return redirect(url_for('home'))
+                else:
+                    flash('Matricula/Senha incorretos.', 'warning')
+            else:
+                flash('Matricula/Senha incorretos.', 'warning')
+
+    except Exception as e:
+        flash(f'Ocorreu um erro durante o login: {e}', 'danger')
+    
     # Paginação dos avisos
     avisos = [
         {"tipo": "info", "mensagem": "O sistema estará indisponível no dia 05/12 das 08:00 às 12:00."},
@@ -151,9 +155,8 @@ def login():
         {"tipo": "error", "mensagem": "Erro no sistema detectado."},
     ]
 
-    # Paginação manual
     page = request.args.get('page', 1, type=int)
-    per_page = 2  # Quantos avisos por página
+    per_page = 2
     total = len(avisos)
     start = (page - 1) * per_page
     end = start + per_page
@@ -173,109 +176,111 @@ def login():
   
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
- 
-    # Check if "matricula", "password" and "email" POST requests exist (user submitted form)
-    if request.method == 'POST' and 'matricula' in request.form and 'password' in request.form and 'email' in request.form:
-        # Create variables for easy access
-        fullname = request.form['fullname'].upper()
-        matricula = request.form['matricula']
-        password = request.form['password']
-        email = request.form['email']
-        lattes_link = request.form['lattes_link']
-        tipo_servidor = 'Docente'
-    
-        _hashed_password = generate_password_hash(password)
- 
-        #Check if account exists using MySQL
-        cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
-        account = cursor.fetchone()
-        print(account)
-        # If account exists show error and validation checks
-        if account:
-            flash('Essa conta já existe!', 'danger')
-        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            flash('Endereço de e-mail inválido!', 'warning')
-        elif not re.match(r'^[0-9]+$', matricula):
-            flash('Matricula deve conter apenas numeros!', 'warning')
-        elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
-            flash('Forneça um Lattes iD válido!', 'warning')
-        elif not matricula or not password or not email:
-            flash('Por favor, preencha todos os campos!', 'warning')
-        else:
-            # Account doesnt exists and the form data is valid, now insert new account into users table
-            cursor.execute("INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s,%s,%s,%s,%s,%s)", (fullname, matricula, _hashed_password, email, tipo_servidor, lattes_link))
-            conn.commit()
-            flash('Sua conta foi registrada com sucesso!', 'success')
-            return render_template('login.html')
-    elif request.method == 'POST':
-        # Form is empty... (no POST data)
-        flash('Por favor, preencha o formulário completo!', 'warning')
-    # Show registration form with message (if any)
+    try:
+        if request.method == 'POST' and 'matricula' in request.form and 'password' in request.form and 'email' in request.form:
+            fullname = request.form['fullname'].upper()
+            matricula = request.form['matricula']
+            password = request.form['password']
+            email = request.form['email']
+            lattes_link = request.form['lattes_link']
+            tipo_servidor = 'Docente'
+
+            _hashed_password = generate_password_hash(password)
+
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
+                account = cursor.fetchone()
+
+                if account:
+                    flash('Essa conta já existe!', 'danger')
+                elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                    flash('Endereço de e-mail inválido!', 'warning')
+                elif not re.match(r'^[0-9]+$', matricula):
+                    flash('Matricula deve conter apenas numeros!', 'warning')
+                elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
+                    flash('Forneça um Lattes iD válido!', 'warning')
+                elif not matricula or not password or not email:
+                    flash('Por favor, preencha todos os campos!', 'warning')
+                else:
+                    cursor.execute(
+                        "INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (fullname, matricula, _hashed_password, email, tipo_servidor, lattes_link)
+                    )
+                    conn.commit()
+                    flash('Sua conta foi registrada com sucesso!', 'success')
+                    return render_template('login.html')
+
+        elif request.method == 'POST':
+            flash('Por favor, preencha o formulário completo!', 'warning')
+
+    except Exception as e:
+        flash(f"Ocorreu um erro durante o registro: {e}", 'danger')
+
     return render_template('register.html')
+
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        if request.method == 'POST':
+            email = request.form.get('email')
 
-    if request.method == 'POST':
-        email = request.form.get('email')
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute('SELECT * FROM servidores WHERE e_mail = %s', (email,))
+                user = cursor.fetchone()
 
-        cursor.execute('SELECT * FROM servidores WHERE e_mail = %s', (email,))
-        user = cursor.fetchone()
+                if user:
+                    token = generate_token()
 
-        if user:
-            token = generate_token()
+                    cursor.execute("UPDATE servidores SET reset_token = %s WHERE id_servidor = %s", (token, user['id_servidor']))
+                    conn.commit()
 
-            # Armazena o token no banco de dados
-            cursor.execute("UPDATE servidores SET reset_token = %s WHERE id_servidor = %s", (token, user['id_servidor']))
-            conn.commit()
+                    send_password_reset_email(email, token)
 
-            # Envia e-mail com o token para redefinição de senha
-            send_password_reset_email(email, token)
+                    flash('Um e-mail foi enviado com instruções para redefinir sua senha.', 'success')
+                    return redirect(url_for('login'))
+                else:
+                    flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'warning')
+                    return redirect(url_for('login'))
 
-            flash('Um e-mail foi enviado com instruções para redefinir sua senha.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('E-mail não encontrado. Por favor, insira o e-mail cadastrado.', 'warning')
-            return redirect(url_for('login'))  # Adicionando o redirecionamento para a página de login
+    except Exception as e:
+        flash(f"Ocorreu um erro ao solicitar redefinição de senha: {e}", 'danger')
 
     return render_template('forgot_password.html')
+
 
 # Rota para a página de redefinição de senha
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    # Verifica se o token corresponde a um usuário
-    cursor.execute('SELECT * FROM servidores WHERE reset_token = %s', (token,))
-    user = cursor.fetchone()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute('SELECT * FROM servidores WHERE reset_token = %s', (token,))
+            user = cursor.fetchone()
 
-    if user:
-        if request.method == 'POST':
-            new_password = request.form.get('new_password')
-            confirm_password = request.form.get('confirm_password')
+            if user:
+                if request.method == 'POST':
+                    new_password = request.form.get('new_password')
+                    confirm_password = request.form.get('confirm_password')
 
-            # Verifica se as senhas coincidem
-            if new_password == confirm_password:
-                # Hash da nova senha
-                hashed_password = generate_password_hash(new_password, method='sha256')
+                    if new_password == confirm_password:
+                        hashed_password = generate_password_hash(new_password, method='sha256')
 
-                # Atualiza a senha no banco de dados
-                cursor.execute("UPDATE servidores SET senha = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
+                        cursor.execute("UPDATE servidores SET senha = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
+                        cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
+                        conn.commit()
 
-                # Limpa o reset_token
-                cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
-                conn.commit()
+                        flash('Senha redefinida com sucesso.', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('As senhas não coincidem. Tente novamente.', 'danger')
 
-                flash('Senha redefinida com sucesso.', 'success')
-                return redirect(url_for('login'))
+                return render_template('reset_password.html', token=token)
             else:
-                flash('As senhas não coincidem. Tente novamente.', 'danger')
+                flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'danger')
+                return redirect(url_for('forgot_password'))
 
-        return render_template('reset_password.html', token=token)
-    else:
-        flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'danger')
+    except Exception as e:
+        flash(f'Ocorreu um erro ao redefinir a senha: {e}', 'danger')
         return redirect(url_for('forgot_password'))
 
 @app.route('/upload_xml', methods=['POST'])
@@ -283,54 +288,48 @@ def upload_xml():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
 
-    if 'file' not in request.files:
+    if 'file' not in request.files or request.files['file'].filename == '':
         flash('Nenhum arquivo foi selecionado', 'warning')
         return redirect(url_for('profile'))
 
     file = request.files['file']
-    if file.filename == '':
-        flash('Nenhum arquivo foi selecionado', 'warning')
+    xml_content = file.read()
+
+    # Detectar codificação do arquivo
+    detected = chardet.detect(xml_content)
+    detected_encoding = detected['encoding'] or 'utf-8'
+    print(f"📄 Codificação detectada: {detected_encoding}")
+
+    try:
+        # Decodificar XML e verificar se é válido
+        xml_string = xml_content.decode(detected_encoding)
+        root = etree.fromstring(xml_string.encode('utf-8'))
+    except (UnicodeDecodeError, etree.XMLSyntaxError) as e:
+        flash('Erro ao processar o XML', 'danger')
+        print(f"❌ Erro ao processar XML: {e}")
         return redirect(url_for('profile'))
 
-    if file:
-        xml_content = file.read()
+    # Extrair data e hora do XML
+    data_attr = root.attrib.get("DATA-ATUALIZACAO")
+    hora_attr = root.attrib.get("HORA-ATUALIZACAO")
 
-        # Detectar codificação do arquivo
-        detected_encoding = chardet.detect(xml_content)['encoding']
-        print(f"📄 Codificação detectada: {detected_encoding}")
+    if not data_attr or not hora_attr:
+        flash('Não foi possível encontrar a data/hora de atualização no XML', 'warning')
+        print("⚠️ DATA-ATUALIZACAO ou HORA-ATUALIZACAO não encontrados")
+        return redirect(url_for('profile'))
 
-        try:
-            # Decodificar XML e verificar se é válido
-            xml_string = xml_content.decode(detected_encoding)
-            root = etree.fromstring(xml_string.encode('utf-8'))
-        except (UnicodeDecodeError, etree.XMLSyntaxError) as e:
-            flash('Erro ao processar o XML', 'danger')
-            print(f"❌ Erro ao processar XML: {e}")
-            return redirect(url_for('profile'))
+    print(f"📅 DATA-ATUALIZACAO: {data_attr} | 🕒 HORA-ATUALIZACAO: {hora_attr}")
 
-        # Extrair data e hora do XML
-        data_attr = root.attrib.get("DATA-ATUALIZACAO")
-        hora_attr = root.attrib.get("HORA-ATUALIZACAO")
+    try:
+        data_hora_lattes = datetime.strptime(data_attr + hora_attr, "%d%m%Y%H%M%S")
+        print(f"✅ Timestamp convertido: {data_hora_lattes}")
+    except ValueError as e:
+        flash('Formato de data/hora inválido no XML', 'danger')
+        print(f"❌ Erro ao converter data/hora: {e}")
+        return redirect(url_for('profile'))
 
-        if not data_attr or not hora_attr:
-            flash('Não foi possível encontrar a data/hora de atualização no XML', 'warning')
-            print("⚠️ DATA-ATUALIZACAO ou HORA-ATUALIZACAO não encontrados")
-            return redirect(url_for('profile'))
-
-        print(f"📅 DATA-ATUALIZACAO: {data_attr} | 🕒 HORA-ATUALIZACAO: {hora_attr}")
-
-        try:
-            # Converter string "12022023" + "190416" para datetime
-            data_hora_lattes = datetime.strptime(data_attr + hora_attr, "%d%m%Y%H%M%S")
-            print(f"✅ Timestamp convertido: {data_hora_lattes}")
-        except ValueError as e:
-            flash('Formato de data/hora inválido no XML', 'danger')
-            print(f"❌ Erro ao converter data/hora: {e}")
-            return redirect(url_for('profile'))
-
-        # Atualizar o banco de dados
-        try:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("""
                 UPDATE servidores
                 SET lattes_xml = %s,
@@ -339,16 +338,12 @@ def upload_xml():
                 WHERE id_servidor = %s
             """, (xml_string, data_hora_lattes, session['id']))
             conn.commit()
-            cursor.close()
             flash('Arquivo XML enviado com sucesso', 'success')
-        except Exception as e:
-            flash('Erro ao salvar os dados no banco', 'danger')
-            print(f"❌ Erro no banco de dados: {e}")
-            return redirect(url_for('profile'))
-
+    except Exception as e:
+        flash('Erro ao salvar os dados no banco', 'danger')
+        print(f"❌ Erro no banco de dados: {e}")
         return redirect(url_for('profile'))
 
-    flash('Algo deu errado ao enviar o arquivo', 'danger')
     return redirect(url_for('profile'))
 
 @app.route('/logout')
@@ -371,111 +366,140 @@ def logout():
     return resp
       
 @app.route('/profile')
-def profile(): 
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-   
-    # Check if user is loggedin
-    if 'loggedin' in session:
-        cursor.execute('SELECT * FROM servidores WHERE id_servidor = %s', [session['id']])
-        account = cursor.fetchone()
-        # Show the profile page with account info
+def profile():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute('SELECT * FROM servidores WHERE id_servidor = %s', (session['id'],))
+            account = cursor.fetchone()
+    except Exception as e:
+        flash('Erro ao carregar dados do perfil', 'danger')
+        print(f"❌ Erro ao acessar perfil: {e}")
+        return redirect(url_for('login'))
+
+    if account:
         return render_template('profile.html', account=account, now=datetime.now())
-    
-    # User is not loggedin redirect to login page
+
+    flash('Conta não encontrada.', 'warning')
     return redirect(url_for('login'))
+
 
 @app.route('/eventos')
 def eventos():
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    # Ajustando a query para filtrar eventos cujo data_fim ainda não passou
-    cursor.execute("""
-        SELECT * FROM eventos 
-        WHERE ativo = true 
-        AND data_fim >= CURRENT_DATE
-        ORDER BY data_fim ASC
-    """)
-    eventos = cursor.fetchall()
-    
-    cursor.execute('SELECT * FROM instrumentos_avaliacao')
-    instrumentos = cursor.fetchall()
-    
-    cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
-    tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
 
-    if 'loggedin' in session:
-        return render_template('eventos.html', eventos=eventos, user_role=session['role'], instrumentos=instrumentos, tipos_evento=tipos_evento, eventos_ativos=bool(eventos))
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        cursor.execute("""
+            SELECT * FROM eventos 
+            WHERE ativo = true 
+            AND data_fim >= CURRENT_DATE
+            ORDER BY data_fim ASC
+        """)
+        eventos = cursor.fetchall()
 
-    return redirect(url_for('login'))
+        cursor.execute('SELECT * FROM instrumentos_avaliacao')
+        instrumentos = cursor.fetchall()
+
+        cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
+        tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+
+    return render_template(
+        'eventos.html', 
+        eventos=eventos, 
+        user_role=session['role'], 
+        instrumentos=instrumentos, 
+        tipos_evento=tipos_evento, 
+        eventos_ativos=bool(eventos)
+    )
 
 @app.route('/avaliacoes')
 def avaliacoes():
-    if 'loggedin' in session and session['role'] == 'Docente':
-        # Lógica para recuperar os eventos ativos e inscritos pelo Docente
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute(
-            'SELECT a.id_avaliacao, a.data_avaliacao, e.identificacao, e.localizacao '
-            'FROM avaliacao a '
-            'JOIN eventos e ON a.fk_id_evento = e.id_evento '
-            'WHERE a.fk_id_servidor = %s AND e.data_fim >= %s',
-            (session['id'], current_datetime)
-        )
-        eventos_inscritos = cursor.fetchall()
-
-        return render_template('avaliacoes.html', eventos_inscritos=eventos_inscritos)
-    else:
+    if 'loggedin' not in session or session.get('role') != 'Docente':
         return redirect(url_for('login'))
+
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute('''
+                SELECT a.id_avaliacao, a.data_avaliacao, e.identificacao, e.localizacao
+                FROM avaliacao a
+                JOIN eventos e ON a.fk_id_evento = e.id_evento
+                WHERE a.fk_id_servidor = %s AND e.data_fim >= %s
+                ORDER BY a.data_avaliacao ASC
+            ''', (session['id'], current_datetime))
+            eventos_inscritos = cursor.fetchall()
+    except Exception as e:
+        flash('Erro ao carregar avaliações.', 'danger')
+        print(f"❌ Erro ao consultar avaliações: {e}")
+        eventos_inscritos = []
+
+    return render_template('avaliacoes.html', eventos_inscritos=eventos_inscritos)
+
 
 @app.route('/criar_evento', methods=['POST'])
 def criar_evento():
-    if 'loggedin' not in session or session['role'] != 'Administrador':
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        try:
-            identificacao = request.form['identificacao']
-            tipo_evento = request.form['tipo_evento']
-            data_inicio = request.form['data_inicio']
-            data_fim = request.form['data_fim']
-            localizacao = request.form['localizacao']
-            descricao = request.form['descricao']
-            data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            data_atualizacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            id_instrumento_avaliacao = request.form['fk_id_instrumento_avaliacao']  # Use diretamente o ID do instrumento recebido
-            print("Valor recebido do formulário:", id_instrumento_avaliacao)  # Adicione esta linha para verificar o valor recebido
-    
-            cursor = conn.cursor()
+    try:
+        identificacao = request.form.get('identificacao', '').strip()
+        tipo_evento = request.form.get('tipo_evento', '').strip()
+        data_inicio = request.form.get('data_inicio')
+        data_fim = request.form.get('data_fim')
+        localizacao = request.form.get('localizacao', '').strip()
+        descricao = request.form.get('descricao', '').strip()
+        id_instrumento_avaliacao = request.form.get('fk_id_instrumento_avaliacao')
+
+        data_criacao = datetime.now()
+        data_atualizacao = datetime.now()
+
+        print("🔍 Valor recebido do formulário:", id_instrumento_avaliacao)
+
+        with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO eventos (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, data_criacao, data_atualizacao, fk_id_instrumento_avaliacao)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, data_criacao, data_atualizacao, id_instrumento_avaliacao))
-    
+                INSERT INTO eventos (
+                    identificacao, tipo_evento, data_inicio, data_fim, 
+                    localizacao, descricao, data_criacao, data_atualizacao, 
+                    fk_id_instrumento_avaliacao
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                identificacao, tipo_evento, data_inicio, data_fim, 
+                localizacao, descricao, data_criacao, data_atualizacao, 
+                id_instrumento_avaliacao
+            ))
             conn.commit()
-    
-            flash('Novo evento criado com sucesso!', 'success')
-        except psycopg2.Error as e:
-            conn.rollback()  # Realiza um rollback da transação para garantir a consistência
-            flash(f'Ocorreu um erro ao criar o evento: {str(e)}', 'danger')
-            
+
+        flash('✅ Novo evento criado com sucesso!', 'success')
+
+    except psycopg2.Error as e:
+        conn.rollback()
+        flash(f'❌ Ocorreu um erro ao criar o evento: {str(e)}', 'danger')
+
     return redirect(url_for('eventos'))
 
-@app.route('/remover_evento/<int:evento_id>', methods=['GET', 'POST'])
+
+@app.route('/remover_evento/<int:evento_id>', methods=['POST'])
 def remover_evento(evento_id):
-    if 'loggedin' not in session or session['role'] != 'Administrador':
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM eventos WHERE id_evento = %s", (evento_id,))
-        conn.commit()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM eventos WHERE id_evento = %s", (evento_id,))
+            conn.commit()
 
-        flash('Evento removido com sucesso!', 'success')
-        return redirect(url_for('eventos'))
+        flash('✅ Evento removido com sucesso!', 'success')
+
+    except psycopg2.Error as e:
+        conn.rollback()
+        flash(f'❌ Erro ao remover o evento: {str(e)}', 'danger')
 
     return redirect(url_for('eventos'))
+
 
 @app.route('/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
 def editar_evento(evento_id):
@@ -490,63 +514,57 @@ def editar_evento(evento_id):
             data_fim = request.form['data_fim']
             localizacao = request.form['localizacao']
             descricao = request.form['descricao']
-            criterios_selecionados = request.form.getlist('criterios')  # Recebe os IDs dos critérios selecionados
+            criterios_selecionados = request.form.getlist('criterios')
 
-            # Atualizando os dados básicos do evento
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE eventos 
-                SET identificacao = %s, 
-                    tipo_evento = %s, 
-                    data_inicio = %s, 
-                    data_fim = %s, 
-                    localizacao = %s, 
-                    descricao = %s 
-                WHERE id_evento = %s
-            """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, evento_id))
-            conn.commit()
-            
-            # Atualizando as associações de critérios (removendo as antigas e adicionando as novas)
-            cursor.execute("DELETE FROM rel_eventos_criterios WHERE id_evento = %s", (evento_id,))
-            for criterio_id in criterios_selecionados:
-                cursor.execute("""
-                    INSERT INTO rel_eventos_criterios (id_evento, id_criterio) 
-                    VALUES (%s, %s)
-                """, (evento_id, criterio_id))
-            conn.commit()
+            with conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE eventos 
+                        SET identificacao = %s, 
+                            tipo_evento = %s, 
+                            data_inicio = %s, 
+                            data_fim = %s, 
+                            localizacao = %s, 
+                            descricao = %s 
+                        WHERE id_evento = %s
+                    """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, evento_id))
+
+                    cursor.execute("DELETE FROM rel_eventos_criterios WHERE id_evento = %s", (evento_id,))
+                    for criterio_id in criterios_selecionados:
+                        cursor.execute("""
+                            INSERT INTO rel_eventos_criterios (id_evento, id_criterio) 
+                            VALUES (%s, %s)
+                        """, (evento_id, criterio_id))
 
             flash('Evento atualizado com sucesso!', 'success')
             return redirect(url_for('eventos'))
         except Exception as e:
             flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
-    # Carregando os dados do evento
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
-    evento = cursor.fetchone()
-    
-    # Carregando os instrumentos de avaliação e critérios associados
-    cursor.execute("""
-        SELECT c.id_criterio, c.criterio, i.nome_instrumento
-        FROM criterios c
-        JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
-        JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
-        WHERE c.ativo = TRUE
-        ORDER BY i.nome_instrumento, c.criterio
-    """)
-    criterios_disponiveis = cursor.fetchall()
+    # Parte GET
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
+        evento = cursor.fetchone()
 
-    # Carregando os critérios já associados ao evento
-    cursor.execute("""
-        SELECT id_criterio 
-        FROM rel_eventos_criterios 
-        WHERE id_evento = %s
-    """, (evento_id,))
-    criterios_associados = [row['id_criterio'] for row in cursor.fetchall()]
+        cursor.execute("""
+            SELECT c.id_criterio, c.criterio, i.nome_instrumento
+            FROM criterios c
+            JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
+            JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
+            WHERE c.ativo = TRUE
+            ORDER BY i.nome_instrumento, c.criterio
+        """)
+        criterios_disponiveis = cursor.fetchall()
 
-    # Carregando os tipos de evento
-    cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
-    tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+        cursor.execute("""
+            SELECT id_criterio 
+            FROM rel_eventos_criterios 
+            WHERE id_evento = %s
+        """, (evento_id,))
+        criterios_associados = [row['id_criterio'] for row in cursor.fetchall()]
+
+        cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
+        tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
     return render_template(
         'editar_evento.html', 
@@ -558,112 +576,128 @@ def editar_evento(evento_id):
 
 @app.route('/inscrever_evento', methods=['POST'])
 def inscrever_evento():
-    if 'loggedin' in session and session['role'] == 'Docente':
-        # Lógica para verificar se o Docente já está inscrito no evento
-        evento_id = request.form.get('evento_id')
-        
-        cursor = conn.cursor()
-        cursor.execute(
-            'SELECT * FROM avaliacao WHERE fk_id_servidor = %s AND fk_id_evento = %s AND data_avaliacao BETWEEN (SELECT data_inicio FROM eventos WHERE id_evento = %s) AND (SELECT data_fim FROM eventos WHERE id_evento = %s)',
-            (session['id'], evento_id, evento_id, evento_id)
-        )
-        inscricao_existente = cursor.fetchone()
+    if 'loggedin' not in session or session['role'] != 'Docente':
+        return redirect(url_for('login'))
 
-        if inscricao_existente:
-            # Docente já está inscrito no evento
+    evento_id = request.form.get('evento_id')
+    if not evento_id:
+        flash('Evento inválido.', 'danger')
+        return redirect(url_for('eventos'))
+
+    with conn.cursor() as cursor:
+        # Verifica se já existe inscrição para o período do evento
+        cursor.execute('''
+            SELECT 1 FROM avaliacao 
+            WHERE fk_id_servidor = %s AND fk_id_evento = %s 
+              AND data_avaliacao BETWEEN 
+                (SELECT data_inicio FROM eventos WHERE id_evento = %s) 
+                AND 
+                (SELECT data_fim FROM eventos WHERE id_evento = %s)
+        ''', (session['id'], evento_id, evento_id, evento_id))
+        if cursor.fetchone():
             flash('Você já está inscrito neste evento.', 'warning')
             return redirect(url_for('eventos'))
-        else:
-            # Verificar se há um XML de Lattes associado ao servidor
-            cursor.execute('SELECT lattes_xml FROM servidores WHERE id_servidor = %s', (session['id'],))
-            lattes_xml_result = cursor.fetchone()
-            
-            if lattes_xml_result is None or lattes_xml_result[0] is None:
-                # Se não houver XML de Lattes, exibir mensagem de erro e redirecionar para eventos
-                flash('Não há XML de Lattes associado ao seu perfil. Insira seu XML de Lattes para participar da avaliação.', 'danger')
-                return redirect(url_for('eventos'))
-            
-            # Lógica para criar a inscrição na tabela 'avaliacao'
-            cursor.execute(
-                'SELECT localizacao FROM eventos WHERE id_evento = %s',
-                (evento_id,)
-            )
-            localizacao_do_evento = cursor.fetchone()[0]
-            
-            cursor.execute(
-                'INSERT INTO avaliacao (organizacao, data_avaliacao, fk_id_servidor, fk_id_evento) VALUES (%s, NOW(), %s, %s)',
-                (localizacao_do_evento, session['id'], evento_id)
-            )
-            conn.commit()
-            
-            cursor.execute(
-                'SELECT id_avaliacao FROM avaliacao WHERE fk_id_servidor = %s AND fk_id_evento = %s',
-                (session['id'], evento_id)
-            )
-            id_avaliacao_result = cursor.fetchone()
-            
-            if id_avaliacao_result is not None:
-                id_avaliacao = id_avaliacao_result[0]
-            else:
-                flash('Erro ao obter o ID da avaliação.', 'danger')
-                return redirect(url_for('eventos'))
-            
-            # Obter o ID do instrumento de avaliação a partir da nova tabela
-            cursor.execute(
-                '''
-                SELECT id_instrumento_avaliacao 
-                FROM rel_criterios_instrumentos 
-                WHERE id_instrumento_avaliacao = (
-                    SELECT fk_id_instrumento_avaliacao 
-                    FROM eventos 
-                    WHERE id_evento = %s
-                )
-                ''',
-                (evento_id,)
-            )
-            id_instrumento_avaliacao_result = cursor.fetchone()
-            
-            if id_instrumento_avaliacao_result is not None:
-                instrumento_avaliacao_id = str(id_instrumento_avaliacao_result[0])
-            else:
-                flash('Erro ao obter o ID do instrumento de avaliação.', 'danger')
-                return redirect(url_for('eventos'))
-            
-            # Chamar a função para obter o DataFrame
-            df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=instrumento_avaliacao_id)
-    
-            # Verificar se o DataFrame é válido antes de continuar
-            if df_avaliacao is not None:
-                # Inserir os dados na tabela avaliacao_dados
-                for index, row in df_avaliacao.iterrows():
-                    cursor.execute(
-                        'INSERT INTO avaliacao_dados (fk_id_avaliacao, item, criterios, pontuacao_por_item, pontuacao_maxima, quantidade, pontuacao_atingida) VALUES (%s, %s, %s, %s, %s, %s, %s)',
-                        (id_avaliacao, row['item'], row['criterios'], row['pontuacao_por_item'], row['pontuacao_maxima'], row['quantidade'], row['pontuacao_atingida'])
-                    )
-                conn.commit()
-                
-                # Somar os pontos_atingidos da tabela avaliacao_dados
-                cursor.execute(
-                    'SELECT SUM(pontuacao_atingida) FROM avaliacao_dados WHERE fk_id_avaliacao = %s',
-                    (id_avaliacao,)
-                )
-                soma_pontuacao_result = cursor.fetchone()
-                soma_pontuacao = soma_pontuacao_result[0] if soma_pontuacao_result[0] is not None else 0
-                
-                # Atualizar o campo pontuacao na tabela avaliacao
-                cursor.execute(
-                    'UPDATE avaliacao SET pontuacao = %s WHERE id_avaliacao = %s',
-                    (soma_pontuacao, id_avaliacao)
-                )
-                conn.commit()
-            
-                flash('Inscrição realizada com sucesso!', 'success')
-                return redirect(url_for('avaliacoes'))
-            else:
-                flash('Erro ao gerar dados de avaliação.', 'danger')
-                return redirect(url_for('eventos'))
-    
-    return redirect(url_for('login'))
+
+        # Busca XML e data de atualização do Lattes
+        cursor.execute('''
+            SELECT lattes_xml, data_ultima_atualizacao_lattes 
+            FROM servidores 
+            WHERE id_servidor = %s
+        ''', (session['id'],))
+        lattes_info = cursor.fetchone()
+
+        if not lattes_info or not lattes_info[0]:
+            flash('Não há XML de Lattes associado ao seu perfil. Acesse seu perfil e envie o XML do Lattes para participar.', 'danger')
+            return redirect(url_for('eventos'))
+
+        data_atualizacao_lattes = lattes_info[1]
+        if not data_atualizacao_lattes or data_atualizacao_lattes < datetime.now() - timedelta(days=180):
+            flash('Seu currículo Lattes está desatualizado há mais de 6 meses. Atualize seu XML na página de perfil para se inscrever.', 'danger')
+            return redirect(url_for('eventos'))
+
+        # Busca local do evento
+        cursor.execute('SELECT localizacao FROM eventos WHERE id_evento = %s', (evento_id,))
+        local_result = cursor.fetchone()
+        if not local_result:
+            flash('Evento não encontrado.', 'danger')
+            return redirect(url_for('eventos'))
+
+        localizacao_do_evento = local_result[0]
+
+        # Cria registro de avaliação
+        cursor.execute('''
+            INSERT INTO avaliacao (organizacao, data_avaliacao, fk_id_servidor, fk_id_evento) 
+            VALUES (%s, NOW(), %s, %s)
+        ''', (localizacao_do_evento, session['id'], evento_id))
+        conn.commit()
+
+        # Busca ID da avaliação recém-criada
+        cursor.execute('''
+            SELECT id_avaliacao 
+            FROM avaliacao 
+            WHERE fk_id_servidor = %s AND fk_id_evento = %s 
+            ORDER BY id_avaliacao DESC 
+            LIMIT 1
+        ''', (session['id'], evento_id))
+        avaliacao_result = cursor.fetchone()
+        if not avaliacao_result:
+            flash('Erro ao registrar a avaliação.', 'danger')
+            return redirect(url_for('eventos'))
+
+        id_avaliacao = avaliacao_result[0]
+
+        # Busca ID do instrumento de avaliação
+        cursor.execute('''
+            SELECT fk_id_instrumento_avaliacao 
+            FROM eventos 
+            WHERE id_evento = %s
+        ''', (evento_id,))
+        instrumento_result = cursor.fetchone()
+        if not instrumento_result or not instrumento_result[0]:
+            flash('Erro ao obter o instrumento de avaliação associado ao evento.', 'danger')
+            return redirect(url_for('eventos'))
+
+        instrumento_avaliacao_id = str(instrumento_result[0])
+
+    # Executa algoritmo fora do bloco `with`
+    df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=instrumento_avaliacao_id)
+    if df_avaliacao is None:
+        flash('Erro ao gerar dados de avaliação.', 'danger')
+        return redirect(url_for('eventos'))
+
+    with conn.cursor() as cursor:
+        for _, row in df_avaliacao.iterrows():
+            cursor.execute('''
+                INSERT INTO avaliacao_dados (
+                    fk_id_avaliacao, item, criterios, 
+                    pontuacao_por_item, pontuacao_maxima, 
+                    quantidade, pontuacao_atingida
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                id_avaliacao, row['item'], row['criterios'],
+                row['pontuacao_por_item'], row['pontuacao_maxima'],
+                row['quantidade'], row['pontuacao_atingida']
+            ))
+        conn.commit()
+
+        # Atualiza total de pontuação
+        cursor.execute('''
+            SELECT SUM(pontuacao_atingida) 
+            FROM avaliacao_dados 
+            WHERE fk_id_avaliacao = %s
+        ''', (id_avaliacao,))
+        soma_pontuacao = cursor.fetchone()[0] or 0
+
+        cursor.execute('''
+            UPDATE avaliacao 
+            SET pontuacao = %s 
+            WHERE id_avaliacao = %s
+        ''', (soma_pontuacao, id_avaliacao))
+        conn.commit()
+
+    flash('Inscrição realizada com sucesso!', 'success')
+    return redirect(url_for('avaliacoes'))
+
     
 @app.route('/detalhes_avaliacao/<int:avaliacao_id>', methods=['GET'])
 def detalhes_avaliacao(avaliacao_id):

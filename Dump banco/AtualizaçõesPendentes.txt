@@ -32,8 +32,7 @@ tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTT
 
 Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostrar isso na pagina do usuario - Feito e bonus de aviso quando estiver desatualizado por mais de 6 meses.
 
-
-E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses.
+E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses. - Feito
 
 
 
