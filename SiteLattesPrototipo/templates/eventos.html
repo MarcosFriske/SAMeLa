@@ -1,4 +1,3 @@
-//templates/eventos.html
 {% extends 'layout.html' %}
 
 {% block title %}Eventos{% endblock %}
@@ -16,11 +15,11 @@
                     <th>Data de Fim</th>
                     <th>Localização</th>
                     <th>Descrição</th>
+                    <th>Instrumento Avaliação</th>
                     {% if user_role == 'Administrador' %}
                         <th>Editar</th>
                         <th>Remover</th>
                     {% endif %}
-                    <!-- Adicione mais colunas conforme necessário -->
                 </tr>
                 {% for evento in eventos %}
                 <tr>
@@ -37,18 +36,23 @@
                         {% endif %}
                     </td>
                     <td>{{ evento.descricao }}</td>
+                    <td>
+                        {% if evento.nome_instrumento %}
+                            {{ evento.nome_instrumento }}
+                        {% else %}
+                            Não associado
+                        {% endif %}
+                    </td>
                     {% if user_role == 'Administrador' %}
                         <td><a href="/editar_evento/{{ evento.id_evento }}">Editar</a></td>
                         <td><a href="#" onclick="removerEvento('{{ evento.id_evento }}')">Remover</a></td>
                     {% endif %}
-                    <!-- Adicione mais colunas conforme necessário -->
                 </tr>
                 {% endfor %}
             </table>
 
             {% if user_role == 'Docente' %}
                 <h2>Inscrever-se em Evento</h2>
-                <!-- Adicione o formulário para inscrição em eventos -->
                 <form method="post" action="{{ url_for('inscrever_evento') }}" class="form-group" id="inscricao-form">
                     <label for="evento_id">Selecione o Evento:</label>
                     <select id="evento_id" name="evento_id" required class="form-control">
@@ -65,33 +69,34 @@
                 <form method="post" action="{{ url_for('criar_evento') }}">
                     <label for="identificacao">Identificação:</label><br>
                     <input type="text" id="identificacao" name="identificacao" required><br>
-            
+
                     <label for="tipo_evento">Tipo de Evento:</label><br>
                     <select id="tipo_evento" name="tipo_evento" required>
                         {% for tipo in tipos_evento %}
                             <option value="{{ tipo }}">{{ tipo }}</option>
                         {% endfor %}
                     </select><br>
-            
+
                     <label for="data_inicio">Data de Início:</label><br>
                     <input type="date" id="data_inicio" name="data_inicio" required><br>
 
                     <label for="data_fim">Data de Fim:</label><br>
                     <input type="date" id="data_fim" name="data_fim" required><br>
-            
+
                     <label for="localizacao">Localização:</label><br>
                     <input type="text" id="localizacao" name="localizacao" required><br>
-            
+
                     <label for="descricao">Descrição:</label><br>
                     <textarea id="descricao" name="descricao" required></textarea><br>
-            
+
                     <label for="fk_id_instrumento_avaliacao">Nome do Instrumento de Avaliação:</label><br>
                     <select id="fk_id_instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
+                        <option value="">-- Nenhum Instrumento Associado --</option>
                         {% for instrumento in instrumentos %}
                             <option value="{{ instrumento.id_instrumento_avaliacao }}">{{ instrumento.nome }}</option>
                         {% endfor %}
                     </select><br>
-                    
+
                     <input class="mt-3" type="submit" value="Criar Evento">
                 </form>
             {% endif %}
@@ -104,5 +109,4 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/eventos.js') }}"></script>
-
 {% endblock %}

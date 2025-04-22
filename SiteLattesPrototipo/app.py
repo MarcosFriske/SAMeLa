@@ -392,17 +392,23 @@ def eventos():
         return redirect(url_for('login'))
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        # Agora fazemos LEFT JOIN para pegar o nome do instrumento
         cursor.execute("""
-            SELECT * FROM eventos 
-            WHERE ativo = true 
-            AND data_fim >= CURRENT_DATE
-            ORDER BY data_fim ASC
+            SELECT e.*, i.nome AS nome_instrumento
+            FROM eventos e
+            LEFT JOIN instrumentos_avaliacao i 
+              ON e.fk_id_instrumento_avaliacao = i.id_instrumento_avaliacao
+            WHERE e.ativo = true 
+              AND e.data_fim >= CURRENT_DATE
+            ORDER BY e.data_fim ASC
         """)
         eventos = cursor.fetchall()
 
+        # Consulta dos instrumentos permanece igual
         cursor.execute('SELECT * FROM instrumentos_avaliacao')
         instrumentos = cursor.fetchall()
 
+        # Pegando os tipos de evento do enum do banco
         cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
         tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
 
@@ -414,6 +420,7 @@ def eventos():
         tipos_evento=tipos_evento, 
         eventos_ativos=bool(eventos)
     )
+
 
 @app.route('/avaliacoes')
 def avaliacoes():
@@ -452,7 +459,9 @@ def criar_evento():
         data_fim = request.form.get('data_fim')
         localizacao = request.form.get('localizacao', '').strip()
         descricao = request.form.get('descricao', '').strip()
-        id_instrumento_avaliacao = request.form.get('fk_id_instrumento_avaliacao')
+        
+        # Pode vir como string vazia, tratamos como None
+        id_instrumento_avaliacao = request.form.get('fk_id_instrumento_avaliacao') or None
 
         data_criacao = datetime.now()
         data_atualizacao = datetime.now()
@@ -514,7 +523,7 @@ def editar_evento(evento_id):
             data_fim = request.form['data_fim']
             localizacao = request.form['localizacao']
             descricao = request.form['descricao']
-            criterios_selecionados = request.form.getlist('criterios')
+            id_instrumento_avaliacao = request.form.get('fk_id_instrumento_avaliacao')
 
             with conn:
                 with conn.cursor() as cursor:
@@ -525,54 +534,51 @@ def editar_evento(evento_id):
                             data_inicio = %s, 
                             data_fim = %s, 
                             localizacao = %s, 
-                            descricao = %s 
+                            descricao = %s,
+                            fk_id_instrumento_avaliacao = %s
                         WHERE id_evento = %s
-                    """, (identificacao, tipo_evento, data_inicio, data_fim, localizacao, descricao, evento_id))
-
-                    cursor.execute("DELETE FROM rel_eventos_criterios WHERE id_evento = %s", (evento_id,))
-                    for criterio_id in criterios_selecionados:
-                        cursor.execute("""
-                            INSERT INTO rel_eventos_criterios (id_evento, id_criterio) 
-                            VALUES (%s, %s)
-                        """, (evento_id, criterio_id))
+                    """, (
+                        identificacao, tipo_evento, data_inicio, data_fim, 
+                        localizacao, descricao, id_instrumento_avaliacao, evento_id
+                    ))
 
             flash('Evento atualizado com sucesso!', 'success')
             return redirect(url_for('eventos'))
+
         except Exception as e:
             flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
-    # Parte GET
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
         evento = cursor.fetchone()
 
-        cursor.execute("""
-            SELECT c.id_criterio, c.criterio, i.nome_instrumento
-            FROM criterios c
-            JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
-            JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
-            WHERE c.ativo = TRUE
-            ORDER BY i.nome_instrumento, c.criterio
-        """)
-        criterios_disponiveis = cursor.fetchall()
+        cursor.execute('SELECT id_instrumento_avaliacao, nome FROM instrumentos_avaliacao ORDER BY nome')
+        instrumentos = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT id_criterio 
-            FROM rel_eventos_criterios 
-            WHERE id_evento = %s
-        """, (evento_id,))
-        criterios_associados = [row['id_criterio'] for row in cursor.fetchall()]
+        # Buscar critérios do instrumento já vinculado ao evento
+        criterios_disponiveis = []
+        if evento['fk_id_instrumento_avaliacao']:
+            cursor.execute("""
+                SELECT c.id_criterio, c.criterio, i.nome
+                FROM criterios c
+                JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
+                JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
+                WHERE c.ativo = TRUE AND i.id_instrumento_avaliacao = %s
+                ORDER BY c.criterio
+            """, (evento['fk_id_instrumento_avaliacao'],))
+            criterios_disponiveis = cursor.fetchall()
 
         cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
-        tipos_evento = [item for sublist in cursor.fetchall() for item in sublist]
+        tipos_evento = [item[0] for item in cursor.fetchall()]
 
     return render_template(
-        'editar_evento.html', 
-        evento=evento, 
-        criterios_disponiveis=criterios_disponiveis, 
-        criterios_associados=criterios_associados, 
-        tipos_evento=tipos_evento
+        'editar_evento.html',
+        evento=evento,
+        criterios_disponiveis=criterios_disponiveis,
+        tipos_evento=tipos_evento,
+        instrumentos=instrumentos
     )
+
 
 @app.route('/inscrever_evento', methods=['POST'])
 def inscrever_evento():
@@ -611,18 +617,34 @@ def inscrever_evento():
             return redirect(url_for('eventos'))
 
         data_atualizacao_lattes = lattes_info[1]
-        if not data_atualizacao_lattes or data_atualizacao_lattes < datetime.now() - timedelta(days=180):
-            flash('Seu currículo Lattes está desatualizado há mais de 6 meses. Atualize seu XML na página de perfil para se inscrever.', 'danger')
-            return redirect(url_for('eventos'))
 
-        # Busca local do evento
-        cursor.execute('SELECT localizacao FROM eventos WHERE id_evento = %s', (evento_id,))
-        local_result = cursor.fetchone()
-        if not local_result:
+        # Busca local do evento, limite de meses e instrumento de avaliação
+        cursor.execute('''
+            SELECT localizacao, meses_maximos_desde_atualizacao_lattes, fk_id_instrumento_avaliacao 
+            FROM eventos 
+            WHERE id_evento = %s
+        ''', (evento_id,))
+        evento_info = cursor.fetchone()
+
+        if not evento_info:
             flash('Evento não encontrado.', 'danger')
             return redirect(url_for('eventos'))
 
-        localizacao_do_evento = local_result[0]
+        localizacao_do_evento = evento_info[0]
+        meses_maximos = evento_info[1] or 6  # fallback para 6 meses se não definido
+        instrumento_avaliacao_id = str(evento_info[2]) if evento_info[2] else None
+
+        if not data_atualizacao_lattes:
+            flash('Data de atualização do Lattes não encontrada. Atualize seu XML na página de perfil.', 'danger')
+            return redirect(url_for('eventos'))
+
+        # Verifica limite de atualização do Lattes (corrigido)
+        delta_dias = (datetime.now().date() - data_atualizacao_lattes.date()).days
+        delta_meses = delta_dias // 30  # Aproximação por mês
+
+        if delta_meses > meses_maximos:
+            flash(f'Seu currículo Lattes está desatualizado há {delta_meses} meses. O máximo permitido para este evento é {meses_maximos} meses. Atualize seu XML na página de perfil para se inscrever.', 'danger')
+            return redirect(url_for('eventos'))
 
         # Cria registro de avaliação
         cursor.execute('''
@@ -645,19 +667,6 @@ def inscrever_evento():
             return redirect(url_for('eventos'))
 
         id_avaliacao = avaliacao_result[0]
-
-        # Busca ID do instrumento de avaliação
-        cursor.execute('''
-            SELECT fk_id_instrumento_avaliacao 
-            FROM eventos 
-            WHERE id_evento = %s
-        ''', (evento_id,))
-        instrumento_result = cursor.fetchone()
-        if not instrumento_result or not instrumento_result[0]:
-            flash('Erro ao obter o instrumento de avaliação associado ao evento.', 'danger')
-            return redirect(url_for('eventos'))
-
-        instrumento_avaliacao_id = str(instrumento_result[0])
 
     # Executa algoritmo fora do bloco `with`
     df_avaliacao = executar_algoritmo(id_servidor=session['id'], instrumento_avaliacao_id=instrumento_avaliacao_id)

@@ -29,10 +29,12 @@
             <textarea id="descricao" name="descricao" required>{{ evento.descricao }}</textarea><br>
 
             <label for="instrumento_avaliacao">Instrumento de Avaliação:</label><br>
-            <select id="instrumento_avaliacao" name="instrumento_avaliacao">
+            <select id="instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
+                <option value="">-- Nenhum --</option>
                 {% for instrumento in instrumentos %}
-                    <option value="{{ instrumento.id_instrumento_avaliacao }}" {% if instrumento.id_instrumento_avaliacao in evento.instrumentos_associados %} selected {% endif %}>
-                        {{ instrumento.nome }}
+                    <option value="{{ instrumento.id_instrumento_avaliacao }}"
+                        {% if evento.fk_id_instrumento_avaliacao == instrumento.id_instrumento_avaliacao %} selected {% endif %}>
+                        {{ instrumento.nome_instrumento }}
                     </option>
                 {% endfor %}
             </select><br>
