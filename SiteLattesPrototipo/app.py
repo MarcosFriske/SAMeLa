@@ -549,35 +549,45 @@ def editar_evento(evento_id):
             flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        # Buscar dados do evento
         cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
         evento = cursor.fetchone()
 
-        cursor.execute('SELECT id_instrumento_avaliacao, nome FROM instrumentos_avaliacao ORDER BY nome')
+        # Buscar todos os instrumentos de avaliação
+        cursor.execute('SELECT id_instrumento_avaliacao, nome AS nome_instrumento FROM instrumentos_avaliacao ORDER BY nome')
         instrumentos = cursor.fetchall()
 
-        # Buscar critérios do instrumento já vinculado ao evento
+        # Buscar critérios associados ao instrumento vinculado ao evento
         criterios_disponiveis = []
         if evento['fk_id_instrumento_avaliacao']:
             cursor.execute("""
-                SELECT c.id_criterio, c.criterio, i.nome
+                SELECT c.id_criterio, c.criterio
                 FROM criterios c
                 JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
-                JOIN instrumentos_avaliacao i ON rci.id_instrumento_avaliacao = i.id_instrumento_avaliacao
-                WHERE c.ativo = TRUE AND i.id_instrumento_avaliacao = %s
+                WHERE c.ativo = TRUE AND rci.id_instrumento_avaliacao = %s
                 ORDER BY c.criterio
             """, (evento['fk_id_instrumento_avaliacao'],))
             criterios_disponiveis = cursor.fetchall()
 
+        # Buscar IDs dos critérios já associados ao evento (se isso estiver em outra tabela)
+        cursor.execute("""
+            SELECT id_criterio FROM criterios_evento WHERE id_evento = %s
+        """, (evento_id,))
+        criterios_associados_ids = [row[0] for row in cursor.fetchall()]
+
+        # Buscar os tipos de evento do ENUM
         cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
         tipos_evento = [item[0] for item in cursor.fetchall()]
 
     return render_template(
         'editar_evento.html',
         evento=evento,
-        criterios_disponiveis=criterios_disponiveis,
+        criterios=criterios_disponiveis,
+        criterios_associados=criterios_associados_ids,
         tipos_evento=tipos_evento,
         instrumentos=instrumentos
     )
+
 
 
 @app.route('/inscrever_evento', methods=['POST'])

@@ -38,17 +38,21 @@
                     </option>
                 {% endfor %}
             </select><br>
-            
-            <label for="criterios">Critérios Associados:</label><br>
-            <ul>
-                {% for criterio in criterios %}
-                    <li>
-                        <input type="checkbox" id="criterio_{{ criterio.id_criterio }}" name="criterios[]" value="{{ criterio.id_criterio }}"
-                               {% if criterio.id_criterio in evento.criterios_associados %} checked {% endif %}>
-                        <label for="criterio_{{ criterio.id_criterio }}">{{ criterio.criterio }}</label>
-                    </li>
-                {% endfor %}
-            </ul>
+
+            {% if criterios %}
+                <label for="criterios">Critérios Associados:</label><br>
+                <ul>
+                    {% for criterio in criterios %}
+                        <li>
+                            <input type="checkbox" id="criterio_{{ criterio.id_criterio }}" name="criterios[]" value="{{ criterio.id_criterio }}"
+                                   {% if criterio.id_criterio in criterios_associados %} checked {% endif %}>
+                            <label for="criterio_{{ criterio.id_criterio }}">{{ criterio.criterio }}</label>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p><em>Nenhum critério disponível para o instrumento selecionado.</em></p>
+            {% endif %}
 
             <input type="submit" value="Atualizar Evento">
         </form>

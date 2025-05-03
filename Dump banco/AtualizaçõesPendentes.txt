@@ -34,7 +34,32 @@ Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostr
 
 E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses. - Feito
 
+BUG - Tela de cadastro parou de mostrar mensagens de validação.
 
+Remover matricula como obrigatória do cadastro.
+
+Adicionar opção de editar informações do perfil. 
+
+Coordenador de grupo - Cadastrar usuários via XML - Buscando as informações de dentro do XML
+Pedir upload do XML ou avisar que já existe o usuário, baseado no CPF.
+Tem que cadastrar o usuário no evento que o coordenador estiver mexendo.
+Fazer
+
+
+Na hora do cadastro enviar e-mail para validar conta.
+
+Adicionar coluna na tabela servidores validou_email.
+
+Criar procedimento no banco de limpeza de contas caso e-mail não for validado em 24hrs.
+
+
+
+Adicionar campo CPF para tabela de servidores, e também alterar matricula, e-mail, cpf e lattes_link para unique.
+CPF - NOT NULL
+ENDERECO > ENDERECO-PROFISSIONAL > E-MAIL - NOT NULL
+
+
+Adicionar possibilidade de fazer upload do XML Lattes na hora de editar os dados dos servidores, sem precisar de que o servidor faça isso.
 
 
 planilha de resultados - utilizar template de excel, para manter no padrão da planilha de avaliação, relatório pdf protegido baseado no cabeçalho e dados do anexo
@@ -43,7 +68,8 @@ Gerar lista de todos inscritos no evento e pontuação para administrador - pág
 
 Nome do servidor - Pontuação total
 Em PDF.
-
+Apresentar também em tela para todos os inscritos do evento, e deixar ao lado do inscrito opção de baixar o relatório
+individual.
 
 
 Perfil Administrador e Docente, adicionar perfil coordenador - Coordenador de pesquisa, poder trabalhar com os users, avaliação em lote, inserir matricula servidor, 
