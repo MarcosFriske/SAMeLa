@@ -1418,4 +1418,4 @@ def deletar_tipo_servidor():
 
 if __name__ == "__main__":
     # app.run(debug=True)
-    app.run()
+    app.run('127.0.0.1:5000')
