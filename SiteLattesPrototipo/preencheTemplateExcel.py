@@ -11,15 +11,14 @@ ws = wb.active
 # Substituição de placeholders no cabeçalho
 dados = {
     "{{NOME_EDITAL}}": "Edital 2025",
-    "{{TITULO_PROJETO}}": "Pesquisa em IA",
     "{{COORDENADOR_PROJETO}}": "Dr. João Silva",
     "{{LINK_CURRICULO_LATTES}}": "http://lattes.cnpq.br/123456789",
-    "{{SOLICITACAO_BOLSA_MEDIO}}": "X",
-    "{{SOLICITACAO_BOLSA_GRADUACAO}}": "",
+    "{{DATA_INICIO_EVENTO}}": "30/11/2025",
+    "{{DATA_FIM_EVENTO}}": "30/12/2025",
 }
 
 print("✍️ Substituindo placeholders no cabeçalho...")
-for row in ws.iter_rows(min_row=4, max_row=8, min_col=1, max_col=26):
+for row in ws.iter_rows(min_row=3, max_row=7, min_col=1, max_col=6):
     for cell in row:
         if isinstance(cell.value, str):
             for placeholder, novo_valor in dados.items():
@@ -31,7 +30,7 @@ print("✅ Placeholders substituídos!")
 # Encontrar a linha inicial dos critérios
 print("🔍 Procurando linha inicial dos critérios...")
 linha_inicial = None
-for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+for row in ws.iter_rows(min_row=9, max_row=ws.max_row):
     if isinstance(row[0].value, str) and "{{LINHA_INICIAL_CRITERIOS_ITEM}}" in row[0].value:
         linha_inicial = row[0].row
         break
@@ -48,11 +47,11 @@ criterios = [
     {"NUMERO": 1, "CRITERIO": "Titulação - Doutorado", "PONTOS": 25, "MAX_ITENS": 2, "TOTAL_MAX": 1},
     {"NUMERO": 2, "CRITERIO": "Livro com ISBN", "PONTOS": 8, "MAX_ITENS": 40, "TOTAL_MAX": 40},
     {"NUMERO": 3, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
-    {"NUMERO": 4, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
-    {"NUMERO": 5, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
-    {"NUMERO": 6, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
-    {"NUMERO": 7, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
-    {"NUMERO": 8, "CRITERIO": "Capítulo de livro", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 4, "CRITERIO": "Capítulo de livro2", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 5, "CRITERIO": "Capítulo de livro3", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 6, "CRITERIO": "Capítulo de livro4", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 7, "CRITERIO": "Capítulo de livro5", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
+    {"NUMERO": 8, "CRITERIO": "Capítulo de livro6", "PONTOS": 4, "MAX_ITENS": 24, "TOTAL_MAX": 24},
 ]
 
 qtd_novas_linhas = len(criterios)
@@ -73,8 +72,8 @@ def copiar_formatacao(origem, destino):
         celula_destino.number_format = celula_origem.number_format
 
 # Determinar as linhas que serão movidas
-linha_primeira_movida = linha_inicial + 2  
-linha_ultima_movida = linha_primeira_movida + 4  
+linha_primeira_movida = linha_inicial + 1  
+linha_ultima_movida = linha_inicial + 2
 
 # Remover mesclagens abaixo do somatório
 print("📌 Desmesclando células abaixo do somatório...")
@@ -82,9 +81,8 @@ for merged_range in list(ws.merged_cells.ranges):
     if merged_range.min_row >= linha_primeira_movida:
         ws.unmerge_cells(str(merged_range))
 
-# Mover as linhas
-print(f"📌 Movendo linhas {linha_primeira_movida}-{linha_ultima_movida} para baixo...")
-ws.move_range(f"A{linha_primeira_movida}:Z{linha_ultima_movida}", rows=qtd_novas_linhas)
+# Inserir linhas novas
+ws.insert_rows(idx=linha_inicial+1, amount=qtd_novas_linhas-2)
 
 # Inserir os critérios
 print("✍️ Inserindo critérios com formatação...")
@@ -97,71 +95,38 @@ for i, criterio in enumerate(criterios):
     ws.cell(row=linha_atual, column=3, value=criterio["PONTOS"])
     ws.cell(row=linha_atual, column=4, value=criterio["MAX_ITENS"])
     ws.cell(row=linha_atual, column=5, value=criterio["TOTAL_MAX"])
-    ws.cell(row=linha_atual, column=6, value=f"=MIN(E{linha_atual}*C{linha_atual},D{linha_atual})")
 
+    formula = (
+        f"=IF((E{linha_atual}*C{linha_atual})>D{linha_atual},"
+        f"D{linha_atual},"
+        f"(E{linha_atual}*C{linha_atual}))"
+    )
+    
+    print(f'Formula sendo preenchida: {formula}')
+    
+    ws.cell(row=linha_atual, column=6).value = formula
+    
 print("✅ Critérios adicionados com sucesso!")
 
-# Restaurar fórmula do somatório considerando todas as linhas de critérios
+# Pegar nova linha do somatorio
 linha_somatorio = linha_inicial + qtd_novas_linhas
-ws.cell(row=linha_somatorio, column=6, value=f"=SUM(F{linha_inicial}:F{linha_somatorio-1})")
+linha_declaracao = linha_somatorio + 1
+
+
 
 # Restaurar mesclagem e formatação do somatório
 ws.merge_cells(start_row=linha_somatorio, start_column=1, end_row=linha_somatorio, end_column=5)
 celula_somatorio = ws.cell(row=linha_somatorio, column=1)
 celula_somatorio.value = "Somatório dos pontos"
 celula_somatorio.alignment = Alignment(horizontal="center", vertical="center")
+print(f'Formula somatorio preenchida: "=SUM(F{linha_inicial}:F{linha_somatorio-1})"')
+ws.cell(row=linha_somatorio, column=6, value=f"=SUM(F{linha_inicial}:F{linha_somatorio-1})")
 
-# Ajustar alinhamento da OBS do Coordenador do Projeto
-linha_obs_coordenador = linha_somatorio + 1
-ws.merge_cells(start_row=linha_obs_coordenador, start_column=1, end_row=linha_obs_coordenador, end_column=6)
-celula_obs = ws.cell(row=linha_obs_coordenador, column=1)
-celula_obs.value = "OBS do Coordenador do Projeto:"
-celula_obs.alignment = Alignment(horizontal="right", vertical="top")  # Ajustado para mais espaço de escrita
+# Restaurar mesclagem da declaração
+ws.merge_cells(start_row=linha_declaracao, start_column=1, end_row=linha_declaracao, end_column=6)
+celula_declaracao = ws.cell(row=linha_declaracao, column=1)
+celula_declaracao.alignment = Alignment(horizontal="center", vertical="center")
 
-# Mesclar corretamente as células abaixo do somatório
-print("📌 Mesclando células abaixo do somatório...")
-linhas_a_mesclar = [
-    # linha_obs_coordenador + 1,  # Em branco
-    linha_obs_coordenador + 2,  # Texto sobre evento internacional
-    linha_obs_coordenador + 3,  # Declaração final
-]
-
-for linha in linhas_a_mesclar:
-    ws.merge_cells(start_row=linha, start_column=1, end_row=linha, end_column=6)
-    ws.cell(row=linha, column=1).alignment = Alignment(horizontal="left", vertical="top")
-
-print("✅ Células abaixo do somatório mescladas corretamente!")
-
-
-# Definição de bordas destacadas
-borda_destaque = Border(
-    left=Side(style="thin"),
-    right=Side(style="thin"),
-    top=Side(style="thin"),
-    bottom=Side(style="thin")
-)
-
-# Mesclar e destacar a linha acima do texto "Entende-se por Evento Internacional..."
-linha_acima_evento = linha_somatorio + 1
-ws.merge_cells(start_row=linha_acima_evento, start_column=1, end_row=linha_acima_evento, end_column=6)
-celula_acima_evento = ws.cell(row=linha_acima_evento, column=1)
-celula_acima_evento.alignment = Alignment(horizontal="center", vertical="center")
-celula_acima_evento.border = borda_destaque
-
-# Destacar a linha com o texto "Entende-se por Evento Internacional..."
-linha_evento = linha_acima_evento + 1
-for col in range(1, 7):
-    ws.cell(row=linha_evento, column=col).border = borda_destaque
-
-# Destacar a linha abaixo do texto
-linha_abaixo_evento = linha_evento + 1
-for col in range(1, 7):
-    ws.cell(row=linha_abaixo_evento, column=col).border = borda_destaque
-
-# Remover linhas vazias extras
-print("🗑️ Removendo linhas vazias...")
-ws.delete_rows(linha_primeira_movida + 1, 2)
-print("✅ Linhas vazias removidas!")
 
 # Salvar e fechar
 output_path = r"E:\BSI19\TCC2\output.xlsx"
