@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Teste local: preenche o template Excel com dados do banco e gera imagem PNG.
+Teste local: preenche o template Excel com dados do banco e gera imagem PNG e fragmentos A4.
 """
 
 import argparse
@@ -97,7 +97,7 @@ def obter_dados_para_excel(conn, servidor_id: int, evento_id: Optional[int] = No
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Preenche template Excel e gera imagem PNG.")
+    parser = argparse.ArgumentParser(description="Preenche template Excel, gera imagem PNG e fragmentos A4.")
     parser.add_argument("--servidor", "-s", required=True, type=int)
     parser.add_argument("--evento", "-e", required=True, type=int)
     parser.add_argument("--template", "-t", default=r"E:\BSI19\TCC2\master_file.xlsx")
@@ -106,7 +106,6 @@ def main():
 
     tpl = Path(args.template)
     out = Path(args.output)
-    out_img = out.parent / "output.png"  # <- imagem salva na mesma pasta que o Excel
 
     if not tpl.exists():
         print("Template não encontrado:", tpl)
@@ -134,9 +133,15 @@ def main():
 
         print("\n✅ Arquivo Excel gerado com sucesso em:", out)
 
-        # Gera imagem a partir do arquivo preenchido e salva na mesma pasta
-        pre.gerar_imagem(str(out), col_inicio="A", col_fim="F")
+        # Gera imagem a partir do arquivo preenchido
+        out_img = pre.gerar_imagem(str(out))
         print("✅ Imagem gerada com sucesso em:", out_img)
+
+        # Gera fragmentos A4
+        fragmentos_dir = out.parent / "static" / "fragmentos"
+        fragmentos = pre.gerar_fragmentos_a4(out_img, fragmentos_dir)
+        for f in fragmentos:
+            print("Fragmento salvo em:", f)
 
     except Exception as exc:
         print("Erro durante execução:", exc)

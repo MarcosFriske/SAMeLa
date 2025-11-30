@@ -3,13 +3,14 @@ from openpyxl.styles import Alignment
 from copy import copy
 from typing import List, Dict, Any, Union
 from pathlib import Path
-
 import win32com.client as win32
+from PIL import Image
+import time
 
 class ExcelTemplatePreencher:
     """
-    Classe responsável por preencher o template Excel com critérios e 
-    substituir placeholders do cabeçalho, e gerar imagem PNG.
+    Classe responsável por preencher o template Excel com critérios, 
+    substituir placeholders do cabeçalho, gerar imagem PNG e fragmentá-la em A4.
     """
 
     def __init__(self, template_path: Union[str, Path]):
@@ -94,10 +95,10 @@ class ExcelTemplatePreencher:
         output_path = Path(output_path)
         self.wb.save(output_path)
 
-    def gerar_imagem(self, excel_path: Union[str, Path], col_inicio="A", col_fim="F") -> None:
+    def gerar_imagem(self, excel_path: Union[str, Path], col_inicio="A", col_fim="F") -> Path:
         """
         Gera uma imagem PNG apenas do intervalo usado (colunas A-F) e linhas preenchidas.
-        Agora **usa o arquivo Excel passado** (preenchido).
+        Retorna o caminho do arquivo gerado.
         """
         excel_path = str(excel_path)
         excel = win32.gencache.EnsureDispatch('Excel.Application')
@@ -114,10 +115,8 @@ class ExcelTemplatePreencher:
 
         intervalo = f"{col_inicio}1:{col_fim}{ultima_linha}"
         rng = ws.Range(intervalo)
-
         rng.CopyPicture(Format=win32.constants.xlBitmap)
 
-        import time
         import PIL.ImageGrab as ImageGrab
 
         excel.Visible = True
@@ -126,10 +125,50 @@ class ExcelTemplatePreencher:
         time.sleep(0.5)
 
         im = ImageGrab.grabclipboard()
-        if im is not None:
-            im.save("output.png", "PNG")
-        else:
+        if im is None:
+            wb.Close(False)
+            excel.Quit()
             raise RuntimeError("Falha ao capturar imagem da planilha.")
+
+        output_img = Path(excel_path).parent / "output.png"
+        im.save(output_img, "PNG")
 
         wb.Close(False)
         excel.Quit()
+
+        return output_img
+
+    def gerar_fragmentos_a4(self, input_img_path: Union[str, Path], output_dir: Union[str, Path],
+                            largura_a4_mm=210, altura_a4_mm=297, dpi=150) -> List[Path]:
+        """
+        Divide a imagem em fragmentos que cabem na largura de uma folha A4.
+        """
+        input_img_path = Path(input_img_path)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        img = Image.open(input_img_path)
+
+        # Converte dimensões A4 de mm para pixels
+        largura_max = int(largura_a4_mm / 25.4 * dpi)
+        altura_max = int(altura_a4_mm / 25.4 * dpi)
+
+        # Redimensiona largura para caber na A4 mantendo proporção
+        proporcao = largura_max / img.width
+        nova_altura = int(img.height * proporcao)
+        img_resized = img.resize((largura_max, nova_altura), Image.LANCZOS)
+
+        # Calcula quantos fragmentos serão necessários
+        qtd_fragmentos = (nova_altura // altura_max) + 1
+
+        fragmentos = []
+        for i in range(qtd_fragmentos):
+            topo = i * altura_max
+            base = min((i + 1) * altura_max, nova_altura)
+            fragmento = img_resized.crop((0, topo, largura_max, base))
+            fragmento_path = output_dir / f"fragmento_{i+1}.png"
+            fragmento.save(fragmento_path)
+            fragmentos.append(fragmento_path)
+
+        print(f"✅ {len(fragmentos)} fragmentos gerados em: {output_dir}")
+        return fragmentos
