@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Teste local: preenche o template Excel com dados do banco e gera imagem PNG e fragmentos A4.
+Teste local: preenche o template Excel com dados do banco, gera imagem PNG,
+fragmentos A4 e monta PDF final com logo do estado centralizado na primeira página.
 """
 
 import argparse
@@ -10,8 +11,12 @@ from typing import Dict, Any, Optional
 
 import psycopg2
 import psycopg2.extras
-
 from preencheTemplateExcel import ExcelTemplatePreencher
+
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from PIL import Image
 
 DB_CONFIG = {
     "host": "localhost",
@@ -20,6 +25,7 @@ DB_CONFIG = {
     "password": "admin",
     "port": 5432,
 }
+
 
 def obter_dados_para_excel(conn, servidor_id: int, evento_id: Optional[int] = None) -> Dict[str, Any]:
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -96,16 +102,67 @@ def obter_dados_para_excel(conn, servidor_id: int, evento_id: Optional[int] = No
     }
 
 
+def gerar_pdf_com_fragmentos(fragmentos_dir: Path, logo_path: Path, output_pdf: Path,
+                             margem_superior=60, margem_lateral=40, espaco_logo_fragmento=10):
+    imagens = sorted(fragmentos_dir.glob("fragmento_*.png"))
+    if not imagens:
+        raise FileNotFoundError("Nenhum fragmento encontrado em: " + str(fragmentos_dir))
+
+    c = canvas.Canvas(str(output_pdf), pagesize=A4)
+    largura_a4, altura_a4 = A4
+
+    logo = ImageReader(str(logo_path))
+    # Aumenta logo em 50%
+    logo_largura = 180
+    logo_altura = 90
+
+    primeira_pagina = True
+    for img_path in imagens:
+        if not primeira_pagina:
+            c.showPage()
+
+        img = Image.open(img_path)
+        # Largura máxima da imagem
+        img_largura = largura_a4 - 2 * margem_lateral
+        img_altura = int(img.height * (img_largura / img.width))
+
+        # Determina posição Y
+        if primeira_pagina:
+            # Logo centralizado no topo, ajustando um pouco para baixo
+            pos_x_logo = (largura_a4 - logo_largura) / 2
+            pos_y_logo = altura_a4 - margem_superior - 50  # 50 pts para descer o logo
+            c.drawImage(logo, pos_x_logo, pos_y_logo, width=logo_largura, height=logo_altura)
+
+            # Imagem começa logo abaixo do logo
+            pos_y_img = pos_y_logo - logo_altura + 70 - espaco_logo_fragmento
+            primeira_pagina = False
+        else:
+            pos_y_img = altura_a4 - margem_superior
+
+        # Ajusta altura se exceder o espaço disponível
+        if img_altura > pos_y_img - 20:
+            img_altura = pos_y_img - 20
+
+        c.drawImage(str(img_path), margem_lateral, pos_y_img - img_altura, width=img_largura, height=img_altura)
+
+    c.save()
+    print("✅ PDF final gerado em:", output_pdf)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Preenche template Excel, gera imagem PNG e fragmentos A4.")
+    parser = argparse.ArgumentParser(description="Preenche Excel, gera fragmentos A4 e PDF final.")
     parser.add_argument("--servidor", "-s", required=True, type=int)
     parser.add_argument("--evento", "-e", required=True, type=int)
     parser.add_argument("--template", "-t", default=r"E:\BSI19\TCC2\master_file.xlsx")
     parser.add_argument("--output", "-o", default=r"E:\BSI19\TCC2\output_preenchido_banco.xlsx")
+    parser.add_argument("--logo", "-l", default=r"E:\BSI19\TCC2\static\logo_estado.png")
+    parser.add_argument("--pdf", "-p", default=r"E:\BSI19\TCC2\output_final.pdf")
     args = parser.parse_args()
 
     tpl = Path(args.template)
     out = Path(args.output)
+    logo_path = Path(args.logo)
+    output_pdf = Path(args.pdf)
 
     if not tpl.exists():
         print("Template não encontrado:", tpl)
@@ -131,17 +188,18 @@ def main():
         pre.preencher_criterios(criterios)
         pre.salvar(str(out))
 
-        print("\n✅ Arquivo Excel gerado com sucesso em:", out)
+        print("✅ Arquivo Excel gerado em:", out)
 
-        # Gera imagem a partir do arquivo preenchido
+        # Gera imagem do Excel preenchido
         out_img = pre.gerar_imagem(str(out))
-        print("✅ Imagem gerada com sucesso em:", out_img)
+        print("✅ Imagem gerada em:", out_img)
 
         # Gera fragmentos A4
         fragmentos_dir = out.parent / "static" / "fragmentos"
         fragmentos = pre.gerar_fragmentos_a4(out_img, fragmentos_dir)
-        for f in fragmentos:
-            print("Fragmento salvo em:", f)
+
+        # Gera PDF final com logo centralizado e todos os fragmentos
+        gerar_pdf_com_fragmentos(fragmentos_dir, logo_path, output_pdf)
 
     except Exception as exc:
         print("Erro durante execução:", exc)
