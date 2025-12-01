@@ -32,8 +32,8 @@
                 </tbody>
             </table>
 
-            <!-- Botão para Download do Excel -->
-            <a href="{{ url_for('download_avaliacao', id_avaliacao=id_avaliacao, id_docente=id_docente) }}" class="btn btn-primary">Download Excel</a>
+            <!-- Botão para Download do PDF -->
+            <a href="{{ url_for('download_avaliacao_pdf', id_avaliacao=id_avaliacao, id_docente=id_docente) }}" class="btn btn-primary">Baixar PDF</a>
         {% else %}
             <p>Nenhum dado de avaliação disponível.</p>
         {% endif %}

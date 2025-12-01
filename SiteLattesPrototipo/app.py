@@ -1,11 +1,15 @@
 #app.py
 from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response, send_file
+from io import BytesIO
+from pathlib import Path
 import pandas as pd
+from datetime import datetime, timedelta
+import tempfile
+import os
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
 import re 
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
 from lxml import etree
 import chardet
 
@@ -18,6 +22,8 @@ import string
 
 # script da pontuação
 from algoritmoPontuacaoBD import executar_algoritmo
+# script de formatar excel e passar para pdf
+from preencheTemplateExcel import ExcelTemplatePreencher
 
 app = Flask(__name__)
 app.secret_key = 'SAMeLa'
@@ -763,6 +769,78 @@ def download_avaliacao(id_avaliacao, id_docente):
 
     # Enviar o arquivo Excel para download
     return send_file(excel_file, as_attachment=True)
+
+@app.route('/download_avaliacao_pdf/<int:id_avaliacao>/<int:id_docente>')
+def download_avaliacao_pdf(id_avaliacao, id_docente):
+    if 'loggedin' not in session or session.get('role') != 'Docente':
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('login'))
+
+    # --- 1. Buscar dados da avaliação ---
+    query = "SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = %s ORDER BY item ASC"
+    df_avaliacao = pd.read_sql_query(query, conn, params=(id_avaliacao,))
+    if df_avaliacao.empty:
+        flash('Nenhum dado encontrado para esta avaliação.', 'warning')
+        return redirect(url_for('avaliacoes'))
+
+    # --- 2. Buscar informações do servidor e do evento ---
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.nome AS nome_docente, s.lattes_link,
+               e.identificacao AS nome_evento, e.data_inicio, e.data_fim,
+               i.nome AS instrumento_nome
+        FROM avaliacao a
+        JOIN servidores s ON s.id_servidor = a.fk_id_servidor
+        JOIN eventos e ON e.id_evento = a.fk_id_evento
+        JOIN instrumentos_avaliacao i ON i.id_instrumento_avaliacao = e.fk_id_instrumento_avaliacao
+        WHERE a.id_avaliacao = %s
+    """, (id_avaliacao,))
+    info = cursor.fetchone()
+    if not info:
+        flash('Erro ao localizar informações do evento/servidor.', 'danger')
+        return redirect(url_for('avaliacoes'))
+
+    dados_header = {
+        "{{NOME_EDITAL}}": info[2] if info[2] else "Edital",
+        "{{COORDENADOR_PROJETO}}": info[0],
+        "{{LINK_CURRICULO_LATTES}}": info[1] or "",
+        "{{DATA_INICIO_EVENTO}}": info[3].strftime("%d/%m/%Y") if info[3] else "",
+        "{{DATA_FIM_EVENTO}}": info[4].strftime("%d/%m/%Y") if info[4] else "",
+    }
+
+    # --- 3. Preparar lista de critérios ---
+    criterios = []
+    for _, row in df_avaliacao.iterrows():
+        criterios.append({
+            "NUMERO": int(row["item"]) + 1 if row["item"] is not None else 0,
+            "CRITERIO": row["criterios"] or "",
+            "PONTOS": float(row["pontuacao_por_item"]) if row["pontuacao_por_item"] else 0.0,
+            "MAX_ITENS": float(row["pontuacao_maxima"]) if row["pontuacao_maxima"] else 0.0,
+            "TOTAL_MAX": int(row["quantidade"]) if row["quantidade"] else 0,
+        })
+
+    # --- 4. Gerar Excel e imagem ---
+    tpl_path = Path("static/files/master_file.xlsx")
+    pre = ExcelTemplatePreencher(tpl_path)
+    pre.substituir_placeholders(dados_header)
+    pre.preencher_criterios(criterios)
+
+    img = pre.gerar_imagem_em_memoria()
+    fragmentos = pre.gerar_fragmentos_a4(img)
+
+    logo_path = Path("static/images/logo_estado.png")
+    pdf_bytes = ExcelTemplatePreencher.gerar_pdf_em_memoria(fragmentos, logo_path)
+
+    # --- 5. Enviar PDF para download ---
+    pdf_filename = f"avaliacao_{id_avaliacao}_{id_docente}.pdf"
+    return send_file(
+        pdf_bytes,
+        mimetype="application/pdf",
+        attachment_filename=pdf_filename,
+        as_attachment=True
+    )
+
+
     
 @app.route('/desinscrever_evento/<int:avaliacao_id>', methods=['POST'])
 def desinscrever_evento(avaliacao_id):
@@ -1417,5 +1495,5 @@ def deletar_tipo_servidor():
 
 
 if __name__ == "__main__":
-    # app.run(debug=True)
-    app.run('127.0.0.1:5000')
+    # app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000)
