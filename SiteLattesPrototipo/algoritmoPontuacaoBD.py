@@ -183,6 +183,7 @@ def executar_algoritmo(id_servidor, instrumento_avaliacao_id):
         
         for index, row in df_criterios_avaliacao.iterrows():
             xpath_criterio_lattes = row['xpath_criterio_lattes']
+            print(f'XPATH CRITERIO LATTES: {xpath_criterio_lattes}')
             
             if row['considera_qualis'] == False:
                 if 'min_ano' in xpath_criterio_lattes and 'max_ano' in xpath_criterio_lattes:
