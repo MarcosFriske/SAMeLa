@@ -158,52 +158,64 @@ class ExcelTemplatePreencher:
     # ===================================================
     # Fragmenta imagem em A4
     # ===================================================
-    def gerar_fragmentos_a4(self, img: Image.Image, dpi=150) -> List[Image.Image]:
+    def gerar_fragmentos_a4(self, img: Image.Image, dpi=150, altura_logo_pt: int = 80) -> List[Image.Image]:
+        """
+        Fragmenta a imagem em páginas A4 considerando espaço da logo na primeira página.
+        Ajuste mínimo para evitar perda de linhas e sem estourar memória.
+        """
         largura_a4_mm = 210
         altura_a4_mm = 297
         largura_max = int(largura_a4_mm / 25.4 * dpi)
         altura_max = int(altura_a4_mm / 25.4 * dpi)
+    
+        # Redimensiona proporcionalmente à largura da página
         proporcao = largura_max / img.width
         nova_altura = int(img.height * proporcao)
         img_resized = img.resize((largura_max, nova_altura), Image.LANCZOS)
-        qtd_fragmentos = (nova_altura // altura_max) + 1
+    
         fragmentos = []
-        for i in range(qtd_fragmentos):
-            topo = i * altura_max
-            base = min((i + 1) * altura_max, nova_altura)
-            fragmento = img_resized.crop((0, topo, largura_max, base))
-            fragmentos.append(fragmento)
+        topo = 0
+    
+        # Primeira página: desconta altura da logo
+        altura_util_primeira = altura_max - altura_logo_pt
+        base = min(topo + altura_util_primeira, nova_altura)
+        fragmentos.append(img_resized.crop((0, topo, largura_max, base)))
+        topo = base
+    
+        # Demais páginas: usa A4 inteira
+        while topo < nova_altura:
+            base = min(topo + altura_max, nova_altura)
+            fragmentos.append(img_resized.crop((0, topo, largura_max, base)))
+            topo = base
+    
         return fragmentos
-
+    
+    
     # ===================================================
     # Gerar PDF direto em memória a partir dos fragmentos
     # ===================================================
     @staticmethod
-    def gerar_pdf_em_memoria(fragmentos: List[Image.Image], logo_path: Union[str, Path] = None) -> BytesIO:
+    def gerar_pdf_em_memoria(fragmentos: List[Image.Image], logo_path: Union[str, Path] = None,
+                             altura_logo_pt: int = 80) -> BytesIO:
         """
-        Gera PDF em memória a partir de fragmentos de imagem.
-        A logo na primeira página é aumentada em 60% e há espaçamento para os fragmentos.
-        Compatível com Flask (BytesIO) usando dest='S' no FPDF.
+        Gera PDF em memória a partir de fragmentos.
+        Apenas primeira página considera logo.
         """
         pdf = FPDF(unit="pt", format="A4")
         largura_a4_pt, altura_a4_pt = 595, 842
     
+        y_offset_primeira = altura_logo_pt if logo_path else 0
+    
         for i, img in enumerate(fragmentos):
             pdf.add_page()
-            y_offset = 0
+            y_offset = y_offset_primeira if i == 0 else 0
     
-            # Logo opcional na primeira página
             if i == 0 and logo_path:
-                logo_w = 100  # largura padrão
-                logo_h = 0    # altura calculada automaticamente
-                aumento = 1.6  # aumentar 60%
-                logo_w *= aumento
-                # Inserir logo centralizada horizontalmente
-                pdf.image(str(logo_path), x=(largura_a4_pt - logo_w)/2, y=20, w=logo_w, h=logo_h)
-                # Espaçamento entre a logo e os fragmentos
-                y_offset = 20 + logo_w * 0.6  # margem + altura estimada da logo
+                logo_w = 100 * 1.6  # aumenta 60%
+                logo_h = 0
+                pdf.image(str(logo_path), x=(largura_a4_pt - logo_w) / 2, y=20, w=logo_w, h=logo_h)
     
-            # Salvar fragmento em arquivo temporário para compatibilidade
+            # Salvar fragmento temporário e inserir no PDF
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_img:
                 temp_path = tmp_img.name
                 img.save(temp_path, format="PNG")
@@ -212,7 +224,6 @@ class ExcelTemplatePreencher:
             finally:
                 os.remove(temp_path)
     
-        # Gerar PDF como bytes usando dest='S'
         pdf_bytes_str = pdf.output(dest='S').encode('latin1')
         pdf_bytes = BytesIO(pdf_bytes_str)
         pdf_bytes.seek(0)
