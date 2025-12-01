@@ -158,7 +158,7 @@ class ExcelTemplatePreencher:
     # ===================================================
     # Fragmenta imagem em A4
     # ===================================================
-    def gerar_fragmentos_a4(self, img: Image.Image, dpi=150, altura_logo_pt: int = 80) -> List[Image.Image]:
+    def gerar_fragmentos_a4(self, img: Image.Image, dpi=150, altura_logo_pt: int = 338) -> List[Image.Image]:
         """
         Fragmenta a imagem em páginas A4 considerando espaço da logo na primeira página.
         Ajuste mínimo para evitar perda de linhas e sem estourar memória.
@@ -196,7 +196,7 @@ class ExcelTemplatePreencher:
     # ===================================================
     @staticmethod
     def gerar_pdf_em_memoria(fragmentos: List[Image.Image], logo_path: Union[str, Path] = None,
-                             altura_logo_pt: int = 80) -> BytesIO:
+                             altura_logo_pt: int = 100) -> BytesIO:
         """
         Gera PDF em memória a partir de fragmentos.
         Apenas primeira página considera logo.
