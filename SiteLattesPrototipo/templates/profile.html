@@ -1,73 +1,108 @@
-//templates/profile.html
 {% extends 'layout.html' %}
 
-{% block title %}Profile{% endblock %}
+{% block title %}Perfil{% endblock %}
 
 {% block content %}
-    <h1>Seu Perfil</h1>
+<h1>Seu Perfil</h1>
+
+<form method="post" action="{{ url_for('profile') }}">
     <div class="table-responsive">
         <table class="table table-striped">
             <tr>
                 <th>Nome:</th>
-                <td>{{ account['nome'] }}</td>
+                <td>
+                    <input type="text" name="nome" class="form-control"
+                           value="{{ account.nome }}" required>
+                </td>
             </tr>
+
             <tr>
                 <th>Matrícula:</th>
-                <td>{{ account['matricula'] }}</td>
+                <td>
+                    <input type="text" name="matricula" class="form-control"
+                           value="{{ account.matricula or '' }}"
+                           placeholder="Opcional">
+                </td>
             </tr>
+
             <tr>
                 <th>E-mail:</th>
-                <td>{{ account['e_mail'] }}</td>
+                <td>
+                    <input type="email" name="email" class="form-control"
+                           value="{{ account.e_mail }}" required>
+                </td>
             </tr>
+
+            <tr>
+                <th>Lattes iD:</th>
+                <td>
+                    <input type="text" name="lattes_link" class="form-control"
+                           value="{{ account.lattes_link }}"
+                           placeholder="http://lattes.cnpq.br/XXXXXXXXXXXXXXXX"
+                           required>
+                </td>
+            </tr>
+
             <tr>
                 <th>Último Upload de XML:</th>
                 <td>
-                    {% if account['ultimo_upload'] %}
-                        {{ account['ultimo_upload'].strftime('%d/%m/%Y %H:%M:%S') }}
+                    {% if account.ultimo_upload %}
+                        {{ account.ultimo_upload.strftime('%d/%m/%Y %H:%M:%S') }}
                     {% else %}
-                        Nenhum XML foi enviado ainda.
+                        Nenhum XML enviado ainda.
                     {% endif %}
-                </td>                
+                </td>
             </tr>
+
             <tr>
-                <th>Data da Última Atualização no Lattes:</th>
+                <th>Última Atualização Lattes:</th>
                 <td>
-                    {% if account['data_ultima_atualizacao_lattes'] %}
-                        {{ account['data_ultima_atualizacao_lattes'].strftime('%d/%m/%Y %H:%M:%S') }}
-                        {% set meses_diff = ((now - account['data_ultima_atualizacao_lattes']).days) // 30 %}
+                    {% if account.data_ultima_atualizacao_lattes %}
+                        {{ account.data_ultima_atualizacao_lattes.strftime('%d/%m/%Y %H:%M:%S') }}
+
+                        {% set meses_diff = ((now - account.data_ultima_atualizacao_lattes).days) // 30 %}
                         {% if meses_diff > 6 %}
-                            <div class="alert alert-warning mt-2" role="alert">
-                                Atenção: seu currículo Lattes está desatualizado ({{ meses_diff }} meses). 
-                                Muitos eventos exigem atualização nos últimos 6 meses. 
-                                Considere atualizar seu currículo e reenviar o XML.
+                            <div class="alert alert-warning mt-2">
+                                Seu Lattes está desatualizado há {{ meses_diff }} meses.
                             </div>
                         {% endif %}
                     {% else %}
-                        Nenhum dado de atualização do Lattes foi encontrado no XML.
+                        Nenhuma informação encontrada.
                     {% endif %}
                 </td>
             </tr>
         </table>
     </div>
-    
-    <hr>
 
-    <h2>Upload de XML do Currículo Lattes</h2>
-    <form method="post" action="/upload_xml" enctype="multipart/form-data">
-        <div class="form-group">
-            <label>Escolha um arquivo XML</label>
-            <input type="text" class="form-control" id="file-path" placeholder="Nenhum arquivo selecionado" readonly>
-            <input type="file" class="form-control-file" id="file" name="file" style="display: none;">
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file').click();">Procurar...</button>
-        </div>
-        <button type="submit" class="btn btn-primary">Enviar</button>
-    </form>
-    
-    <script>
-        document.getElementById("file").addEventListener("change", function() {
-            var fileName = this.value.split("\\").pop();
-            document.getElementById("file-path").value = fileName || "Nenhum arquivo selecionado";
-        });
-    </script>       
+    <button type="submit" class="btn btn-success">
+        Salvar Alterações
+    </button>
+</form>
 
+<hr>
+
+<h2>Upload de XML do Currículo Lattes</h2>
+
+<form method="post" action="/upload_xml" enctype="multipart/form-data">
+    <div class="form-group">
+        <label>Escolha um arquivo XML</label>
+        <input type="text" class="form-control" id="file-path"
+               placeholder="Nenhum arquivo selecionado" readonly>
+
+        <input type="file" class="form-control-file" id="file" name="file" style="display:none;">
+        <button type="button" class="btn btn-secondary"
+                onclick="document.getElementById('file').click();">
+            Procurar...
+        </button>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+
+<script>
+document.getElementById("file").addEventListener("change", function() {
+    const fileName = this.value.split("\\").pop();
+    document.getElementById("file-path").value = fileName || "Nenhum arquivo selecionado";
+});
+</script>
 {% endblock %}

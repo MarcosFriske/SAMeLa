@@ -395,25 +395,101 @@ def logout():
     # Redirect to login page
     return resp
       
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'loggedin' not in session:
         return redirect(url_for('login'))
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            cursor.execute('SELECT * FROM servidores WHERE id_servidor = %s', (session['id'],))
+
+            # ======================
+            # ATUALIZAÇÃO DO PERFIL
+            # ======================
+            if request.method == 'POST':
+                nome = request.form['nome'].upper().strip()
+                email = request.form['email'].strip()
+                matricula = request.form.get('matricula', '').strip()
+                lattes_link = request.form['lattes_link'].strip()
+
+                # Validações
+                if not nome or not email:
+                    flash('Nome e e-mail são obrigatórios.', 'warning')
+                    return redirect(url_for('profile'))
+
+                if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                    flash('E-mail inválido.', 'warning')
+                    return redirect(url_for('profile'))
+
+                if matricula and not re.match(r'^[0-9]+$', matricula):
+                    flash('Matrícula deve conter apenas números.', 'warning')
+                    return redirect(url_for('profile'))
+
+                if not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
+                    flash('Forneça um Lattes iD válido.', 'warning')
+                    return redirect(url_for('profile'))
+
+                # Verifica duplicidade de e-mail ou matrícula
+                if matricula:
+                    cursor.execute("""
+                        SELECT 1 FROM servidores
+                        WHERE (e_mail = %s OR matricula = %s)
+                        AND id_servidor != %s
+                    """, (email, matricula, session['id']))
+                else:
+                    cursor.execute("""
+                        SELECT 1 FROM servidores
+                        WHERE e_mail = %s
+                        AND id_servidor != %s
+                    """, (email, session['id']))
+
+                if cursor.fetchone():
+                    flash('E-mail ou matrícula já estão em uso.', 'danger')
+                    return redirect(url_for('profile'))
+
+                # Atualiza perfil
+                cursor.execute("""
+                    UPDATE servidores
+                    SET nome = %s,
+                        e_mail = %s,
+                        matricula = %s,
+                        lattes_link = %s
+                    WHERE id_servidor = %s
+                """, (
+                    nome,
+                    email,
+                    matricula if matricula else None,
+                    lattes_link,
+                    session['id']
+                ))
+
+                conn.commit()
+                flash('Perfil atualizado com sucesso!', 'success')
+                return redirect(url_for('profile'))
+
+            # ======================
+            # CARREGAMENTO DO PERFIL
+            # ======================
+            cursor.execute(
+                'SELECT * FROM servidores WHERE id_servidor = %s',
+                (session['id'],)
+            )
             account = cursor.fetchone()
+
     except Exception as e:
-        flash('Erro ao carregar dados do perfil', 'danger')
-        print(f"❌ Erro ao acessar perfil: {e}")
+        flash('Erro ao carregar ou atualizar o perfil.', 'danger')
+        print(f"❌ Erro no perfil: {e}")
         return redirect(url_for('login'))
 
-    if account:
-        return render_template('profile.html', account=account, now=datetime.now())
+    if not account:
+        flash('Conta não encontrada.', 'warning')
+        return redirect(url_for('login'))
 
-    flash('Conta não encontrada.', 'warning')
-    return redirect(url_for('login'))
+    return render_template(
+        'profile.html',
+        account=account,
+        now=datetime.now()
+    )
 
 
 @app.route('/eventos')
