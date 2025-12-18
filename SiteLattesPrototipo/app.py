@@ -183,9 +183,9 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     try:
-        if request.method == 'POST' and 'matricula' in request.form and 'password' in request.form and 'email' in request.form:
+        if request.method == 'POST' and 'password' in request.form and 'email' in request.form:
             fullname = request.form['fullname'].upper()
-            matricula = request.form['matricula']
+            matricula = request.form.get('matricula', '').strip()
             password = request.form['password']
             email = request.form['email']
             lattes_link = request.form['lattes_link']
@@ -194,30 +194,54 @@ def register():
             _hashed_password = generate_password_hash(password)
 
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                cursor.execute('SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s', (matricula, matricula))
+                if matricula:
+                    cursor.execute(
+                        'SELECT * FROM servidores WHERE matricula = %s OR e_mail = %s',
+                        (matricula, email)
+                    )
+                else:
+                    cursor.execute(
+                        'SELECT * FROM servidores WHERE e_mail = %s',
+                        (email,)
+                    )
+
                 account = cursor.fetchone()
 
                 if account:
                     flash('Essa conta já existe!', 'danger')
                 elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
                     flash('Endereço de e-mail inválido!', 'warning')
-                elif not re.match(r'^[0-9]+$', matricula):
-                    flash('Matricula deve conter apenas numeros!', 'warning')
+                elif matricula and not re.match(r'^[0-9]+$', matricula):
+                    flash('Matrícula deve conter apenas números!', 'warning')
                 elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
                     flash('Forneça um Lattes iD válido!', 'warning')
-                elif not matricula or not password or not email:
-                    flash('Por favor, preencha todos os campos!', 'warning')
+                elif not password or not email:
+                    flash('Por favor, preencha os campos obrigatórios!', 'warning')
                 else:
-                    cursor.execute(
-                        "INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (fullname, matricula, _hashed_password, email, tipo_servidor, lattes_link)
-                    )
+                    cursor.execute("""
+                        INSERT INTO servidores (
+                            nome,
+                            matricula,
+                            senha,
+                            e_mail,
+                            tipo_servidor,
+                            lattes_link
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        fullname,
+                        matricula if matricula else None,
+                        _hashed_password,
+                        email,
+                        tipo_servidor,
+                        lattes_link
+                    ))
                     conn.commit()
                     flash('Sua conta foi registrada com sucesso!', 'success')
                     return render_template('login.html')
 
         elif request.method == 'POST':
-            flash('Por favor, preencha o formulário completo!', 'warning')
+            flash('Por favor, preencha o formulário corretamente!', 'warning')
 
     except Exception as e:
         flash(f"Ocorreu um erro durante o registro: {e}", 'danger')
