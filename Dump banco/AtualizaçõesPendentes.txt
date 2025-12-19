@@ -1,44 +1,15 @@
-descrição do sistema e tela de login reutilizar - feito
-
-criar tela de critérios, e criar tela de associação de critérios - feito
-
-criar tabela de relacionamento de critérios e instrumentos de avaliação - feito
-
-Puxar a pesquisa de critérios para a tela que mostra todos os critérios e remover a associação dessa tela. - feito
-
-Cadastro de servidores via administrador, botar role, admin, docente, coord de evento etc - Feito
-
-Mandar e-mail, avisando da criação da conta com senha temporária para acessar e necessidade de atualizar a senha. - Fizemos testes e estava enviando certinho o e-mail
-
-Atualizar tabela eventos, com data inicio e fim inscrição evento - ok
-
-botão desescrever evento, alterar para lixeira - ok
-
-Permitir atualização de tipos no banco de dados, tipo evento e tipo servidor - alter type - ok
-
-Descrição do sistema na tela inicial - Ok
-Imagem na esquerda e quadro de avisos na direita da pagina de login - ok
-
 BOAS PRATICAS BANCO
 https://docs.google.com/document/d/1bU2fC5YpJZX0lhegQwcqa0pukppQNVUb0R8NjKNbr7I/edit?usp=sharing
 
-
-fk_id_instrumento_avaliacao - Ajustar pois essa coluna não existe mais, agora é da tabela de relacionamentos. - Correções aplicadas
-Ajustado bug que estava fazendo eventos expirados aparecerem. - Feito
-
-Adicionar coluna data_ultima_atualizacao_lattes a tabela servidores - feito
-
 tela de eventos inscritos - verificar data do LaTTeS, e permite atualizar o LaTTeS enquanto o evento estiver ativo, e se evento estiver inativo só bloqueia. - Reconsiderado
-
-Modificar para utilizar a data do XML do Lattes, e adicionar um campo para mostrar isso na pagina do usuario - Feito e bonus de aviso quando estiver desatualizado por mais de 6 meses.
-
-E tambem utilizar essa data para validar a inscrição no envento e realizar a avaliação, náo pode ser maior que 6 meses. - Feito
 
 BUG - Tela de cadastro parou de mostrar mensagens de validação.
 
-Remover matricula como obrigatória do cadastro.
+Remover matricula como obrigatória do cadastro. - Feito
 
-Adicionar opção de editar informações do perfil. 
+Adicionar opção de editar informações do perfil. - Feito
+
+Opção para trocar a senha. - Feito
 
 Coordenador de grupo - Cadastrar usuários via XML - Buscando as informações de dentro do XML
 Pedir upload do XML ou avisar que já existe o usuário, baseado no CPF.

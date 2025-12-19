@@ -312,6 +312,55 @@ def reset_password(token):
     except Exception as e:
         flash(f'Ocorreu um erro ao redefinir a senha: {e}', 'danger')
         return redirect(url_for('forgot_password'))
+    
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        if request.method == 'POST':
+            senha_atual = request.form.get('current_password')
+            nova_senha = request.form.get('new_password')
+            confirmar_senha = request.form.get('confirm_password')
+
+            if not senha_atual or not nova_senha or not confirmar_senha:
+                flash('Preencha todos os campos.', 'warning')
+                return redirect(url_for('change_password'))
+
+            if nova_senha != confirmar_senha:
+                flash('A nova senha e a confirmação não coincidem.', 'danger')
+                return redirect(url_for('change_password'))
+
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute(
+                    'SELECT senha FROM servidores WHERE id_servidor = %s',
+                    (session['id'],)
+                )
+                user = cursor.fetchone()
+
+                if not user or not check_password_hash(user['senha'], senha_atual):
+                    flash('Senha atual incorreta.', 'danger')
+                    return redirect(url_for('change_password'))
+
+                nova_senha_hash = generate_password_hash(nova_senha)
+
+                cursor.execute("""
+                    UPDATE servidores
+                    SET senha = %s,
+                        reset_token = NULL
+                    WHERE id_servidor = %s
+                """, (nova_senha_hash, session['id']))
+
+                conn.commit()
+
+            flash('Senha alterada com sucesso!', 'success')
+            return redirect(url_for('profile'))
+
+    except Exception as e:
+        flash(f'Ocorreu um erro ao alterar a senha: {e}', 'danger')
+
+    return render_template('change_password.html')
 
 @app.route('/upload_xml', methods=['POST'])
 def upload_xml():
@@ -1373,21 +1422,20 @@ def registrar_servidor():
 @app.route('/servidores', methods=['GET'])
 def listar_servidores():
     page = request.args.get('page', 1, type=int)
-    per_page = 10  # Número de servidores por página
+    per_page = 10
 
-    # Consulta paginada para obter servidores
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute("SELECT COUNT(*) FROM servidores")
-    total_servidores = cursor.fetchone()[0]
-    
-    cursor.execute(
-        "SELECT * FROM servidores ORDER BY id_servidor LIMIT %s OFFSET %s",
-        (per_page, (page - 1) * per_page)
-    )
-    servidores = cursor.fetchall()
-    
-    # Calcular paginação
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        cursor.execute("SELECT COUNT(*) FROM servidores")
+        total_servidores = cursor.fetchone()[0]
+
+        cursor.execute(
+            "SELECT * FROM servidores ORDER BY id_servidor LIMIT %s OFFSET %s",
+            (per_page, (page - 1) * per_page)
+        )
+        servidores = cursor.fetchall()
+
     total_pages = (total_servidores + per_page - 1) // per_page
+
     pagination = {
         'current': page,
         'total_pages': total_pages,
@@ -1395,7 +1443,11 @@ def listar_servidores():
         'has_next': page < total_pages
     }
 
-    return render_template('servidores.html', servidores=servidores, pagination=pagination)
+    return render_template(
+        'servidores.html',
+        servidores=servidores,
+        pagination=pagination
+    )
 
 @app.route('/editar_servidor/<int:id>', methods=['GET', 'POST'])
 def editar_servidor(id):
