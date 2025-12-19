@@ -8,6 +8,7 @@
         <thead>
             <tr>
                 <th>ID</th>
+                <th>CPF</th>
                 <th>Nome Completo</th>
                 <th>Matrícula</th>
                 <th>Email</th>
@@ -19,6 +20,7 @@
             {% for servidor in servidores %}
             <tr>
                 <td>{{ servidor.id_servidor }}</td>
+                <td>{{ servidor.cpf }}</td>
                 <td>{{ servidor.nome }}</td>
                 <td>{{ servidor.matricula }}</td>
                 <td>{{ servidor.e_mail }}</td>
@@ -45,6 +47,14 @@
         </ul>
     </nav>
 
-    <a href="{{ url_for('registrar_servidor') }}" class="btn btn-success mt-3">Registrar Novo Servidor</a>
+    <div class="mt-4 d-flex gap-2">
+        <a href="{{ url_for('registrar_servidor') }}" class="btn btn-success">
+            Registrar Novo Servidor (Manual)
+        </a>
+
+        <a href="{{ url_for('registrar_servidor_xml') }}" class="btn btn-outline-primary">
+            Registrar Servidor via XML (Lattes)
+        </a>
+    </div>
 </div>
 {% endblock %}

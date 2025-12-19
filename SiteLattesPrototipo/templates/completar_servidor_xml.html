@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Completar Cadastro do Servidor</h2>
+
+    <p><strong>Nome:</strong> {{ dados.nome }}</p>
+    <p><strong>CPF:</strong> {{ dados.cpf }}</p>
+
+    <form method="post">
+        <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+
+        <button class="btn btn-primary mt-3">Finalizar Cadastro</button>
+    </form>
+</div>
+{% endblock %}

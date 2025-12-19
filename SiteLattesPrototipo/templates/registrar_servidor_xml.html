@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Registrar Servidor via XML do Lattes</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Arquivo XML do Lattes</label>
+            <input type="file" name="xml" class="form-control" accept=".xml" required>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3">
+            Registrar Servidor
+        </button>
+    </form>
+</div>
+{% endblock %}

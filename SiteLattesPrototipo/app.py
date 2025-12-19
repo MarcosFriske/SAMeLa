@@ -6,12 +6,18 @@ import pandas as pd
 from datetime import datetime, timedelta
 import tempfile
 import os
+import secrets
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
+from psycopg2 import errors
 import re 
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from lxml import etree
 import chardet
+
+#logging
+import logging
 
 #reset senha
 import smtplib
@@ -24,6 +30,7 @@ import string
 from algoritmoPontuacaoBD import executar_algoritmo
 # script de formatar excel e passar para pdf
 from preencheTemplateExcel import ExcelTemplatePreencher
+from registrar_servidor_xml import extrair_dados_lattes
 
 app = Flask(__name__)
 app.secret_key = 'SAMeLa'
@@ -1448,6 +1455,141 @@ def listar_servidores():
         servidores=servidores,
         pagination=pagination
     )
+
+@app.route('/registrar_servidor_xml', methods=['GET', 'POST'])
+def registrar_servidor_xml():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        file = request.files.get('xml')
+
+        if not file or not file.filename.lower().endswith('.xml'):
+            flash('Envie um arquivo XML válido do Lattes.', 'warning')
+            return redirect(request.url)
+
+        os.makedirs('temp', exist_ok=True)
+        temp_path = os.path.join('temp', secure_filename(file.filename))
+        file.save(temp_path)
+
+        try:
+            dados = extrair_dados_lattes(temp_path)
+
+            # -----------------------------
+            # Validações obrigatórias
+            # -----------------------------
+            if not dados['cpf'] or not dados['nome'] or not dados['lattes_link']:
+                flash('XML inválido: dados essenciais não encontrados.', 'danger')
+                return redirect(request.url)
+
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                cursor.execute(
+                    "SELECT 1 FROM servidores WHERE cpf = %s",
+                    (dados['cpf'],)
+                )
+                if cursor.fetchone():
+                    flash(
+                        'Já existe um servidor cadastrado com este CPF.',
+                        'warning'
+                    )
+                    return redirect(url_for('listar_servidores'))
+
+            # -----------------------------
+            # Se não houver e-mail → fluxo manual
+            # -----------------------------
+            if not dados['email']:
+                session['xml_pendente'] = dados
+                flash(
+                    'O XML não possui e-mail. Informe manualmente para concluir o cadastro.',
+                    'info'
+                )
+                return redirect(url_for('completar_servidor_xml'))
+
+            # -----------------------------
+            # Cadastro direto
+            # -----------------------------
+            senha_temporaria = secrets.token_urlsafe(10)
+            senha_hash = generate_password_hash(senha_temporaria)
+
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO servidores
+                        (nome, cpf, e_mail, lattes_link, senha, tipo_servidor)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    dados['nome'],
+                    dados['cpf'],
+                    dados['email'],
+                    dados['lattes_link'],
+                    senha_hash,
+                    'Docente'
+                ))
+                conn.commit()
+
+            flash('Servidor cadastrado com sucesso via XML.', 'success')
+            return redirect(url_for('listar_servidores'))
+
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            flash(
+                'Já existe um servidor cadastrado com este e-mail.',
+                'warning'
+            )
+
+        except Exception as e:
+            conn.rollback()
+            app.logger.error(e)
+            flash(
+                'Erro ao processar o XML. Verifique se o arquivo é válido.',
+                'danger'
+            )
+
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    return render_template('registrar_servidor_xml.html')
+
+@app.route('/completar_servidor_xml', methods=['GET', 'POST'])
+def completar_servidor_xml():
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    dados = session.get('xml_pendente')
+    if not dados:
+        return redirect(url_for('listar_servidores'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+
+        if not email:
+            flash('E-mail é obrigatório.', 'danger')
+            return redirect(request.url)
+
+        senha_temporaria = secrets.token_urlsafe(10)
+        senha_hash = generate_password_hash(senha_temporaria)
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO servidores
+                    (nome, cpf, e_mail, lattes_link, senha, tipo_servidor)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (
+                dados['nome'],
+                dados['cpf'],
+                email,
+                dados['lattes_link'],  # agora SEMPRE existe
+                senha_hash,
+                'Docente'
+            ))
+            conn.commit()
+
+        session.pop('xml_pendente', None)
+
+        flash('Servidor cadastrado com sucesso.', 'success')
+        return redirect(url_for('listar_servidores'))
+
+    return render_template('completar_servidor_xml.html', dados=dados)
 
 @app.route('/editar_servidor/<int:id>', methods=['GET', 'POST'])
 def editar_servidor(id):
