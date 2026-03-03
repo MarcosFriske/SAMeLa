@@ -1,0 +1,73 @@
+Listagem de caminhos de pasta para o volume DADOS_2T
+O n£mero de s‚rie do volume ‚ EE17-7C29
+E:.
+|   algoritmoPontuacaoBD.py
+|   app.py
+|   estrutura_projeto.txt
+|   preencheTemplateExcel.py
+|   README.md
+|   registrar_servidor_xml.py
+|   requirements.txt
+|   
++---db
+|       dump_valida_lattes.dump
+|       valida_lattes_dump.sql
+|       
++---static
+|   +---css
+|   |       style.css
+|   |       
+|   +---files
+|   |       master_file.xlsx
+|   |       
+|   +---images
+|   |       geati1.png
+|   |       logo_estado.png
+|   |       Logo_IFC_horizontal_Camboriu.png
+|   |       Logo_IFC_vertical_Camboriu.png
+|   |       samela.jpg
+|   |       
+|   \---js
+|           avaliacoes.js
+|           eventos.js
+|           
++---temp
++---templates
+|       associar_criterio.html
+|       avaliacao_dados.html
+|       avaliacoes.html
+|       change_password.html
+|       completar_servidor_xml.html
+|       criar_criterio.html
+|       criterios.html
+|       editar_criterio.html
+|       editar_evento.html
+|       editar_instrumento.html
+|       editar_servidor.html
+|       eventos.html
+|       forgot_password.html
+|       home.html
+|       instrumentos_avaliacao.html
+|       instrumentos_criterios.html
+|       layout.html
+|       login.html
+|       profile.html
+|       register.html
+|       registrar_servidor.html
+|       registrar_servidor_xml.html
+|       reset_password.html
+|       servidores.html
+|       tabela_criterios.html
+|       tipos_evento.html
+|       tipos_servidor.html
+|       
++---testes
+|       TesteLocalPreencheComBanco.py
+|       TesteLocalPreencheTemplateExcel.py
+|       
++---_avast_
+\---__pycache__
+        algoritmoPontuacaoBD.cpython-39.pyc
+        preencheTemplateExcel.cpython-39.pyc
+        registrar_servidor_xml.cpython-39.pyc
+        

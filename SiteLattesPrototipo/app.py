@@ -19,7 +19,7 @@ import chardet
 #logging
 import logging
 
-#reset senha
+#reset senha e email
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -52,12 +52,61 @@ def generate_token():
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
 
 # Função de envio do e-mail para resetar senha
-def send_password_reset_email(receiver_email, token):
-    sender_email = 'geati.ifc@gmail.com'  # Insira seu endereço de e-mail aqui
-    sender_password = 'fthi rjrw kpop vmfq'  # Insira chave de acesso app - autenticação 2 etapas
+def send_password_reset_email(
+        receiver_email: str,
+        token: str
+    ):
+        sender_email = 'geati.ifc@gmail.com'
+        sender_password = 'fthi rjrw kpop vmfq'  # App password
+    
+        reset_link = f"http://127.0.0.1:5000/reset_password/{token}"
+    
+        subject = "SAMeLa - Redefinição de Senha"
+        body = f"""
+Olá,
 
-    subject = "SAMeLa - Redefinição de Senha"
-    body = f"Para redefinir sua senha, clique no link a seguir:\n\nhttp://127.0.0.1:5000/reset_password/{token}"
+Recebemos uma solicitação para redefinição de senha da sua conta no sistema SAMeLa.
+
+Para criar uma nova senha, clique no link abaixo:
+
+{reset_link}
+
+Se você não solicitou esta redefinição, ignore este e-mail.
+
+Atenciosamente,
+Equipe SAMeLa
+"""
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = receiver_email
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "plain"))
+    
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.send_message(message)
+    
+            print(f"📧 E-mail enviado com sucesso para {receiver_email}")
+    
+        except Exception as e:
+            print(f"❌ Erro ao enviar e-mail: {e}")
+
+def send_account_created_email(receiver_email, token):
+    sender_email = 'geati.ifc@gmail.com'
+    sender_password = 'fthi rjrw kpop vmfq'
+
+    subject = "SAMeLa - Sua conta foi criada"
+    body = f"""
+Sua conta no sistema SAMeLa foi criada com sucesso.
+
+Para definir sua senha e acessar o sistema, clique no link abaixo:
+
+http://127.0.0.1:5000/reset_password/{token}
+
+Se você não reconhece este cadastro, ignore este e-mail.
+"""
 
     message = MIMEMultipart()
     message["From"] = sender_email
@@ -65,16 +114,10 @@ def send_password_reset_email(receiver_email, token):
     message["Subject"] = subject
     message.attach(MIMEText(body, "plain"))
 
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            text = message.as_string()
-            server.sendmail(sender_email, receiver_email, text)
-        print("E-mail enviado com sucesso!")
-    except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
-
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(message)
 
 ### ROTAS
 
@@ -220,7 +263,7 @@ def register():
                     flash('Endereço de e-mail inválido!', 'warning')
                 elif matricula and not re.match(r'^[0-9]+$', matricula):
                     flash('Matrícula deve conter apenas números!', 'warning')
-                elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
+                elif not re.match(r'^https://lattes.cnpq.br/\d{16}$', lattes_link):
                     flash('Forneça um Lattes iD válido!', 'warning')
                 elif not password or not email:
                     flash('Por favor, preencha os campos obrigatórios!', 'warning')
@@ -1475,55 +1518,32 @@ def registrar_servidor_xml():
         try:
             dados = extrair_dados_lattes(temp_path)
 
-            # -----------------------------
-            # Validações obrigatórias
-            # -----------------------------
             if not dados['cpf'] or not dados['nome'] or not dados['lattes_link']:
-                flash('XML inválido: dados essenciais não encontrados.', 'danger')
+                flash('XML inválido: dados essenciais ausentes.', 'danger')
                 return redirect(request.url)
 
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                cursor.execute(
-                    "SELECT 1 FROM servidores WHERE cpf = %s",
-                    (dados['cpf'],)
-                )
-                if cursor.fetchone():
-                    flash(
-                        'Já existe um servidor cadastrado com este CPF.',
-                        'warning'
-                    )
-                    return redirect(url_for('listar_servidores'))
-
-            # -----------------------------
-            # Se não houver e-mail → fluxo manual
-            # -----------------------------
-            if not dados['email']:
-                session['xml_pendente'] = dados
-                flash(
-                    'O XML não possui e-mail. Informe manualmente para concluir o cadastro.',
-                    'info'
-                )
-                return redirect(url_for('completar_servidor_xml'))
-
-            # -----------------------------
-            # Cadastro direto
-            # -----------------------------
             senha_temporaria = secrets.token_urlsafe(10)
             senha_hash = generate_password_hash(senha_temporaria)
 
             with conn.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO servidores
-                        (nome, cpf, e_mail, lattes_link, senha, tipo_servidor)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                        (nome, cpf, e_mail, senha, tipo_servidor,
+                         lattes_link, lattes_xml, data_ultima_atualizacao_lattes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::xml, %s)
+                    RETURNING id_servidor
                 """, (
                     dados['nome'],
                     dados['cpf'],
                     dados['email'],
-                    dados['lattes_link'],
                     senha_hash,
-                    'Docente'
+                    'Docente',
+                    dados['lattes_link'],
+                    dados['xml_text'],            # STRING → XML
+                    dados['data_lattes']
                 ))
+
+                id_servidor = cursor.fetchone()[0]
                 conn.commit()
 
             flash('Servidor cadastrado com sucesso via XML.', 'success')
@@ -1531,18 +1551,12 @@ def registrar_servidor_xml():
 
         except psycopg2.errors.UniqueViolation:
             conn.rollback()
-            flash(
-                'Já existe um servidor cadastrado com este e-mail.',
-                'warning'
-            )
+            flash('Já existe um servidor cadastrado com este CPF ou e-mail.', 'warning')
 
         except Exception as e:
             conn.rollback()
-            app.logger.error(e)
-            flash(
-                'Erro ao processar o XML. Verifique se o arquivo é válido.',
-                'danger'
-            )
+            app.logger.exception(e)
+            flash('Erro ao processar o XML.', 'danger')
 
         finally:
             if os.path.exists(temp_path):
@@ -1555,8 +1569,8 @@ def completar_servidor_xml():
     if 'loggedin' not in session or session['role'] != 'Administrador':
         return redirect(url_for('login'))
 
-    dados = session.get('xml_pendente')
-    if not dados:
+    id_servidor = session.get('servidor_pendente_email')
+    if not id_servidor:
         return redirect(url_for('listar_servidores'))
 
     if request.method == 'POST':
@@ -1566,30 +1580,29 @@ def completar_servidor_xml():
             flash('E-mail é obrigatório.', 'danger')
             return redirect(request.url)
 
-        senha_temporaria = secrets.token_urlsafe(10)
-        senha_hash = generate_password_hash(senha_temporaria)
+        reset_token = secrets.token_urlsafe(32)
 
         with conn.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO servidores
-                    (nome, cpf, e_mail, lattes_link, senha, tipo_servidor)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (
-                dados['nome'],
-                dados['cpf'],
-                email,
-                dados['lattes_link'],  # agora SEMPRE existe
-                senha_hash,
-                'Docente'
-            ))
+                UPDATE servidores
+                SET e_mail = %s,
+                    reset_token = %s
+                WHERE id_servidor = %s
+            """, (email, reset_token, id_servidor))
+
             conn.commit()
 
-        session.pop('xml_pendente', None)
+        send_account_created_email(email, reset_token)
 
-        flash('Servidor cadastrado com sucesso.', 'success')
+        session.pop('servidor_pendente_email', None)
+
+        flash(
+            'Cadastro concluído. O servidor receberá um e-mail para definir a senha.',
+            'success'
+        )
         return redirect(url_for('listar_servidores'))
 
-    return render_template('completar_servidor_xml.html', dados=dados)
+    return render_template('completar_servidor_xml.html')
 
 @app.route('/editar_servidor/<int:id>', methods=['GET', 'POST'])
 def editar_servidor(id):
