@@ -43,6 +43,18 @@
         
         <button type="submit" class="btn btn-primary mt-3" id="submitBtn">Salvar Alterações</button>
     </form>
+    <hr>
+
+    {% if session.get('role') == 'Administrador' %}
+    <form action="{{ url_for('deletar_servidor', id=servidor.id_servidor) }}" 
+        method="POST"
+        onsubmit="return confirm('Tem certeza que deseja excluir este servidor? Esta ação não poderá ser desfeita.');">
+        
+        <button type="submit" class="btn btn-danger mt-3">
+            Excluir Servidor
+        </button>
+    </form>
+    {% endif %}
 </div>
 
 <script>

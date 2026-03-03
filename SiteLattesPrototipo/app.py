@@ -334,33 +334,60 @@ def forgot_password():
 def reset_password(token):
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            cursor.execute('SELECT * FROM servidores WHERE reset_token = %s', (token,))
+
+            # 🔎 Buscar usuário pelo token
+            cursor.execute(
+                'SELECT * FROM servidores WHERE reset_token = %s',
+                (token,)
+            )
             user = cursor.fetchone()
 
-            if user:
-                if request.method == 'POST':
-                    new_password = request.form.get('new_password')
-                    confirm_password = request.form.get('confirm_password')
-
-                    if new_password == confirm_password:
-                        hashed_password = generate_password_hash(new_password, method='sha256')
-
-                        cursor.execute("UPDATE servidores SET senha = %s WHERE id_servidor = %s", (hashed_password, user['id_servidor']))
-                        cursor.execute("UPDATE servidores SET reset_token = NULL WHERE id_servidor = %s", (user['id_servidor'],))
-                        conn.commit()
-
-                        flash('Senha redefinida com sucesso.', 'success')
-                        return redirect(url_for('login'))
-                    else:
-                        flash('As senhas não coincidem. Tente novamente.', 'danger')
-
-                return render_template('reset_password.html', token=token)
-            else:
-                flash('Token inválido. Por favor, solicite outra redefinição de senha.', 'danger')
+            if not user:
+                flash(
+                    'Token inválido ou já utilizado. Solicite nova redefinição.',
+                    'danger'
+                )
                 return redirect(url_for('forgot_password'))
 
+            if request.method == 'POST':
+                new_password = request.form.get('new_password')
+                confirm_password = request.form.get('confirm_password')
+
+                # 🔐 Validações básicas
+                if not new_password or not confirm_password:
+                    flash('Preencha todos os campos.', 'warning')
+                    return render_template('reset_password.html', token=token)
+
+                if new_password != confirm_password:
+                    flash('As senhas não coincidem.', 'danger')
+                    return render_template('reset_password.html', token=token)
+
+                if len(new_password) < 6:
+                    flash('A senha deve ter pelo menos 6 caracteres.', 'warning')
+                    return render_template('reset_password.html', token=token)
+
+                # 🔐 Hash seguro
+                hashed_password = generate_password_hash(new_password)
+
+                # 🔄 Atualiza senha e remove token
+                cursor.execute("""
+                    UPDATE servidores
+                    SET senha = %s,
+                        reset_token = NULL
+                    WHERE id_servidor = %s
+                """, (hashed_password, user['id_servidor']))
+
+                conn.commit()
+
+                flash('Senha redefinida com sucesso.', 'success')
+                return redirect(url_for('login'))
+
+            return render_template('reset_password.html', token=token)
+
     except Exception as e:
-        flash(f'Ocorreu um erro ao redefinir a senha: {e}', 'danger')
+        conn.rollback()
+        app.logger.exception(e)
+        flash('Erro ao redefinir a senha.', 'danger')
         return redirect(url_for('forgot_password'))
     
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -1522,15 +1549,21 @@ def registrar_servidor_xml():
                 flash('XML inválido: dados essenciais ausentes.', 'danger')
                 return redirect(request.url)
 
-            senha_temporaria = secrets.token_urlsafe(10)
+            # 🔐 Senha temporária (usuário não sabe)
+            senha_temporaria = secrets.token_urlsafe(16)
             senha_hash = generate_password_hash(senha_temporaria)
+
+            # 🔑 Token para primeiro acesso
+            reset_token = secrets.token_urlsafe(32)
 
             with conn.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO servidores
                         (nome, cpf, e_mail, senha, tipo_servidor,
-                         lattes_link, lattes_xml, data_ultima_atualizacao_lattes)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s::xml, %s)
+                         lattes_link, lattes_xml,
+                         data_ultima_atualizacao_lattes,
+                         reset_token)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::xml, %s, %s)
                     RETURNING id_servidor
                 """, (
                     dados['nome'],
@@ -1539,14 +1572,23 @@ def registrar_servidor_xml():
                     senha_hash,
                     'Docente',
                     dados['lattes_link'],
-                    dados['xml_text'],            # STRING → XML
-                    dados['data_lattes']
+                    dados['xml_text'],
+                    dados['data_lattes'],
+                    reset_token
                 ))
 
                 id_servidor = cursor.fetchone()[0]
                 conn.commit()
 
-            flash('Servidor cadastrado com sucesso via XML.', 'success')
+            # 📧 Enviar e-mail com link de definição de senha
+            send_account_created_email(dados['email'], reset_token)
+
+            flash(
+                f'Servidor cadastrado com sucesso. '
+                f'E-mail enviado para {dados["email"]}.',
+                'success'
+            )
+
             return redirect(url_for('listar_servidores'))
 
         except psycopg2.errors.UniqueViolation:
@@ -1635,6 +1677,34 @@ def editar_servidor(id):
         return redirect(url_for('listar_servidores'))
     
     return render_template('editar_servidor.html', servidor=servidor, tipos_servidor=tipos_servidor)
+
+@app.route('/deletar_servidor/<int:id>', methods=['POST'])
+def deletar_servidor(id):
+    try:
+        # Verifica permissão
+        if session.get('role') != 'Administrador':
+            flash('Você não tem permissão para realizar esta ação.', 'danger')
+            return redirect(url_for('home'))
+
+        # Evita que admin delete a si mesmo
+        if session.get('id_servidor') == id:
+            flash('Você não pode excluir sua própria conta enquanto estiver logado.', 'warning')
+            return redirect(url_for('editar_servidor', id=id))
+
+        with conn.cursor() as cursor:
+            cursor.execute(
+                'DELETE FROM servidores WHERE id_servidor = %s',
+                (id,)
+            )
+            conn.commit()
+
+        flash('Servidor excluído com sucesso!', 'success')
+        return redirect(url_for('listar_servidores'))  # ajuste para sua rota real
+
+    except Exception as e:
+        conn.rollback()
+        flash(f'Ocorreu um erro ao excluir: {e}', 'danger')
+        return redirect(url_for('editar_servidor', id=id))
 
 
 def verificar_tipo_em_uso(tipo, tipo_table, tipo_coluna):
