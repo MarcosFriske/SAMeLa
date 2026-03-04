@@ -151,8 +151,8 @@ def executar_algoritmo(id_servidor, instrumento_avaliacao_id):
     #### Iniciação de variáveis
     
     # Configurando o filtro de ano inicial e final para ser utilizado nos XPATHS do BD
-    min_ano = 2018
-    max_ano = 2022
+    min_ano = 2021
+    max_ano = 2025
 
     # Inicializando o dataframe vazio para receber os dados dos artigos
 
