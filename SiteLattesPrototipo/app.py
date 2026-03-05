@@ -1299,71 +1299,78 @@ def remover_instrumento(instrumento_id):
 
 @app.route('/criterios', methods=['GET'])
 def criterios():
-    if 'loggedin' in session and session['role'] == 'Administrador':
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-        # Parâmetros de filtro e paginação
-        pesquisa = request.args.get('pesquisa', '').strip()
-        pagina = int(request.args.get('pagina', 1))
-        itens_por_pagina = int(request.args.get('itens_por_pagina', 5))
-
-        # Calcular o offset para a paginação
-        offset = (pagina - 1) * itens_por_pagina
-
-        # Debug: log da pesquisa
-        print(f"Pesquisa: {pesquisa}")
-
-        try:
-            # Filtrar critérios com base na pesquisa (caso haja pesquisa)
-            if pesquisa:
-                cursor.execute("""
-                    SELECT * FROM criterios
-                    WHERE ativo = TRUE AND criterio ILIKE %s
-                    ORDER BY criterio ASC
-                    LIMIT %s OFFSET %s
-                """, ('%' + pesquisa + '%', itens_por_pagina, offset))
-            else:
-                cursor.execute("""
-                    SELECT * FROM criterios
-                    WHERE ativo = TRUE
-                    ORDER BY criterio ASC
-                    LIMIT %s OFFSET %s
-                """, (itens_por_pagina, offset))
-            
-            criterios = cursor.fetchall()
-
-            # Contar total de critérios
-            if pesquisa:
-                cursor.execute("""
-                    SELECT COUNT(*) FROM criterios
-                    WHERE ativo = TRUE AND criterio ILIKE %s
-                """, ('%' + pesquisa + '%',))
-            else:
-                cursor.execute("""
-                    SELECT COUNT(*) FROM criterios
-                    WHERE ativo = TRUE
-                """)
-            
-            count_result = cursor.fetchone()
-            total_criterios = count_result[0] if count_result else 0
-
-            # Calcular o número total de páginas
-            total_paginas = (total_criterios + itens_por_pagina - 1) // itens_por_pagina
-
-            # Se a requisição for AJAX, renderizar apenas a tabela de critérios
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # Verifica se é uma requisição AJAX
-                return render_template('tabela_criterios.html', criterios=criterios, pagina=pagina, total_paginas=total_paginas, pesquisa=pesquisa, itens_por_pagina=itens_por_pagina)
-
-            # Caso contrário, renderizar a página completa
-            return render_template('criterios.html', criterios=criterios, pagina=pagina, total_paginas=total_paginas, pesquisa=pesquisa, itens_por_pagina=itens_por_pagina, user_role=session['role'])
-
-        except Exception as e:
-            # Caso ocorra algum erro, log o erro para depuração
-            print(f"Erro ao realizar a pesquisa: {e}")
-            return "Erro na pesquisa, por favor, tente novamente."
-
-    else:
+    if 'loggedin' not in session or session['role'] != 'Administrador':
         return redirect(url_for('login'))
+
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    pesquisa = request.args.get('pesquisa', '').strip()
+    pagina = int(request.args.get('pagina', 1))
+    itens_por_pagina = int(request.args.get('itens_por_pagina', 5))
+
+    offset = (pagina - 1) * itens_por_pagina
+
+    try:
+
+        if pesquisa:
+            cursor.execute("""
+                SELECT *
+                FROM criterios
+                WHERE ativo = TRUE
+                AND criterio ILIKE %s
+                ORDER BY criterio ASC
+                LIMIT %s OFFSET %s
+            """, ('%' + pesquisa + '%', itens_por_pagina, offset))
+
+        else:
+            cursor.execute("""
+                SELECT *
+                FROM criterios
+                WHERE ativo = TRUE
+                ORDER BY criterio ASC
+                LIMIT %s OFFSET %s
+            """, (itens_por_pagina, offset))
+
+        criterios = cursor.fetchall()
+
+        if pesquisa:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM criterios
+                WHERE ativo = TRUE
+                AND criterio ILIKE %s
+            """, ('%' + pesquisa + '%',))
+        else:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM criterios
+                WHERE ativo = TRUE
+            """)
+
+        total_criterios = cursor.fetchone()[0]
+
+        total_paginas = (total_criterios + itens_por_pagina - 1) // itens_por_pagina
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+
+            return render_template(
+                'tabela_criterios.html',
+                criterios=criterios
+            )
+
+        return render_template(
+            'criterios.html',
+            criterios=criterios,
+            pagina=pagina,
+            total_paginas=total_paginas,
+            pesquisa=pesquisa,
+            itens_por_pagina=itens_por_pagina
+        )
+
+    except Exception as e:
+        print(f"Erro na pesquisa: {e}")
+        return "Erro na pesquisa"
 
     
 
@@ -1409,35 +1416,61 @@ def criar_criterio():
 
 @app.route('/remover_criterio/<int:criterio_id>', methods=['POST'])
 def remover_criterio(criterio_id):
+
     if 'loggedin' not in session or session['role'] != 'Administrador':
         return redirect(url_for('login'))
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
-        # Confirmar se o critério existe
-        cursor.execute("SELECT id_criterio FROM criterios WHERE id_criterio = %s", (criterio_id,))
-        if not cursor.fetchone():
+
+        # Verifica se o critério existe
+        cursor.execute("""
+            SELECT id_criterio
+            FROM criterios
+            WHERE id_criterio = %s
+        """, (criterio_id,))
+
+        criterio = cursor.fetchone()
+
+        if not criterio:
             flash('Critério não encontrado.', 'danger')
             return redirect(url_for('criterios'))
 
-        # Remover o critério
-        cursor.execute("DELETE FROM criterios WHERE id_criterio = %s", (criterio_id,))
+        # Remove associações com instrumentos
+        cursor.execute("""
+            DELETE FROM rel_criterios_instrumentos
+            WHERE id_criterio = %s
+        """, (criterio_id,))
+
+        # Remove o critério
+        cursor.execute("""
+            DELETE FROM criterios
+            WHERE id_criterio = %s
+        """, (criterio_id,))
+
         conn.commit()
 
         flash('Critério removido com sucesso!', 'success')
+
     except psycopg2.Error as e:
+
         conn.rollback()
         flash(f'Ocorreu um erro ao remover o critério: {str(e)}', 'danger')
 
-    # Obter o filtro de instrumento do form
+    finally:
+        cursor.close()
+
     filtro_instrumento = request.form.get('instrumento_filtro', '')
     pagina = request.form.get('pagina', 1)
     itens_por_pagina = request.form.get('itens_por_pagina', 5)
 
-    # Redirecionar para a página de critérios com os filtros aplicados
-    return redirect(url_for('criterios', instrumento_filtro=filtro_instrumento, pagina=pagina, itens_por_pagina=itens_por_pagina))
-
+    return redirect(url_for(
+        'criterios',
+        instrumento_filtro=filtro_instrumento,
+        pagina=pagina,
+        itens_por_pagina=itens_por_pagina
+    ))
 
 @app.route('/editar_criterio/<int:criterio_id>', methods=['GET', 'POST'])
 def editar_criterio(criterio_id):
