@@ -39,7 +39,10 @@ def extrair_dados_lattes(xml_path: str) -> dict:
     # Data última atualização
     # ==============================
     data_lattes = None
-    data_atualizacao = dados_gerais.attrib.get('DATA-ATUALIZACAO')
+    data_atualizacao = root.attrib.get('DATA-ATUALIZACAO')
+
+    if not data_atualizacao:
+        data_atualizacao = root.find('.//DADOS-GERAIS').attrib.get('DATA-ATUALIZACAO')
 
     if data_atualizacao:
         try:

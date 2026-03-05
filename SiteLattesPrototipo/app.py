@@ -26,24 +26,61 @@ from email.mime.multipart import MIMEMultipart
 import random
 import string
 
+# carregar variáveis de ambiente
+from dotenv import load_dotenv
+
 # script da pontuação
 from algoritmoPontuacaoBD import executar_algoritmo
 # script de formatar excel e passar para pdf
 from preencheTemplateExcel import ExcelTemplatePreencher
+# script de criar conta usando o XML do servidor
 from registrar_servidor_xml import extrair_dados_lattes
 
-app = Flask(__name__)
-app.secret_key = 'SAMeLa'
-app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=10)
-COOKIE_TIME_OUT = 60*60*24*7 #7 days
+# =========================
+# LOAD ENVIRONMENT
+# =========================
+load_dotenv()
 
-# Dados da conexão
-DB_HOST = "localhost"
-DB_NAME = "valida_lattes"
-DB_USER = "postgres"
-DB_PASS = "admin"
+# =========================
+# FLASK CONFIG
+# =========================
+app = Flask(__name__)
+
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+    minutes=int(os.getenv("SESSION_LIFETIME_MINUTES", 10))
+)
+
+COOKIE_TIME_OUT = int(os.getenv("COOKIE_TIMEOUT", 604800))
+
+
+# =========================
+# DATABASE CONFIG
+# =========================
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_PORT = os.getenv("DB_PORT", 5432)
  
-conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
+conn = psycopg2.connect(
+    dbname=DB_NAME,
+    user=DB_USER,
+    password=DB_PASS,
+    host=DB_HOST,
+    port=DB_PORT
+)
+
+# =========================
+# EMAIL CONFIG
+# =========================
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+APP_BASE_URL = os.getenv("APP_BASE_URL")
 
 ### FUNÇÕES
 
@@ -56,10 +93,7 @@ def send_password_reset_email(
         receiver_email: str,
         token: str
     ):
-        sender_email = 'geati.ifc@gmail.com'
-        sender_password = 'fthi rjrw kpop vmfq'  # App password
-    
-        reset_link = f"http://127.0.0.1:5000/reset_password/{token}"
+        reset_link = f"{APP_BASE_URL}/reset_password/{token}"
     
         subject = "SAMeLa - Redefinição de Senha"
         body = f"""
@@ -77,25 +111,28 @@ Atenciosamente,
 Equipe SAMeLa
 """
         message = MIMEMultipart()
-        message["From"] = sender_email
+        message["From"] = EMAIL_SENDER
         message["To"] = receiver_email
         message["Subject"] = subject
         message.attach(MIMEText(body, "plain"))
     
         try:
-            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+    
                 server.starttls()
-                server.login(sender_email, sender_password)
+                server.login(EMAIL_SENDER, EMAIL_PASSWORD)
                 server.send_message(message)
     
-            print(f"📧 E-mail enviado com sucesso para {receiver_email}")
+            print(f"E-mail enviado com sucesso para {receiver_email}")
     
         except Exception as e:
-            print(f"❌ Erro ao enviar e-mail: {e}")
+    
+            print(f"Erro ao enviar e-mail: {e}")
 
 def send_account_created_email(receiver_email, token):
-    sender_email = 'geati.ifc@gmail.com'
-    sender_password = 'fthi rjrw kpop vmfq'
+    
+    reset_link = f"{APP_BASE_URL}/reset_password/{token}"
 
     subject = "SAMeLa - Sua conta foi criada"
     body = f"""
@@ -103,20 +140,21 @@ Sua conta no sistema SAMeLa foi criada com sucesso.
 
 Para definir sua senha e acessar o sistema, clique no link abaixo:
 
-http://127.0.0.1:5000/reset_password/{token}
+{reset_link}
 
 Se você não reconhece este cadastro, ignore este e-mail.
 """
 
     message = MIMEMultipart()
-    message["From"] = sender_email
+    message["From"] = EMAIL_SENDER
     message["To"] = receiver_email
     message["Subject"] = subject
     message.attach(MIMEText(body, "plain"))
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+
         server.starttls()
-        server.login(sender_email, sender_password)
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.send_message(message)
 
 ### ROTAS
@@ -1555,15 +1593,17 @@ def registrar_servidor_xml():
 
             # 🔑 Token para primeiro acesso
             reset_token = secrets.token_urlsafe(32)
-
+            data_upload = datetime.now()
+            
             with conn.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO servidores
                         (nome, cpf, e_mail, senha, tipo_servidor,
                          lattes_link, lattes_xml,
                          data_ultima_atualizacao_lattes,
+                         ultimo_upload,
                          reset_token)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s::xml, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::xml, %s, %s, %s)
                     RETURNING id_servidor
                 """, (
                     dados['nome'],
@@ -1574,6 +1614,7 @@ def registrar_servidor_xml():
                     dados['lattes_link'],
                     dados['xml_text'],
                     dados['data_lattes'],
+                    data_upload,
                     reset_token
                 ))
 
