@@ -31,35 +31,67 @@
             {% if session['role'] == 'Administrador' %}
             <!-- Adicione opções de menu para o usuário Administrador aqui -->
             <!-- Por exemplo: -->
-            <li>
-              <a class="nav-link" href="{{ url_for('tipos_evento') }}">Gerenciar Tipos de Evento</a>
-            </li>
-            <li>
-              <a class="nav-link" href="{{ url_for('tipos_servidor') }}">Gerenciar Tipos de Servidor</a>
-            </li>
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('listar_servidores') }}">Visualizar e Registrar Servidores</a>
+              <a class="nav-link" href="{{ url_for('tipos_evento') }}">
+                <i class="bi bi-tags"></i>
+                Gerenciar Tipos de Evento
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('admin_avaliacoes') }}">Avaliações</a>
+              <a class="nav-link" href="{{ url_for('tipos_servidor') }}">
+                <i class="bi bi-person-badge"></i>
+                Gerenciar Tipos de Servidor
+              </a>
             </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('listar_servidores') }}">
+                <i class="bi bi-people"></i>
+                Visualizar e Registrar Servidores
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('admin_avaliacoes') }}">
+                <i class="bi bi-clipboard-check"></i>
+                Avaliações
+              </a>
+            </li>
+
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('admin_rankings') }}">
-                  <i class="bi bi-trophy"></i>
-                  Ranking de Eventos
+                <i class="bi bi-trophy"></i>
+                Ranking de Eventos
               </a>
-          </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('eventos') }}">Cadastro de Eventos</a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('instrumentos_avaliacao') }}">Cadastro de Instrumentos de Avaliação</a>
+              <a class="nav-link" href="{{ url_for('eventos') }}">
+                <i class="bi bi-calendar-event"></i>
+                Cadastro de Eventos
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('criterios') }}">Cadastro de Critérios</a>
+              <a class="nav-link" href="{{ url_for('instrumentos_avaliacao') }}">
+                <i class="bi bi-ui-checks"></i>
+                Cadastro de Instrumentos de Avaliação
+              </a>
             </li>
+
             <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('associar_criterios') }}">Cadastro de Associação de Critérios</a>
+              <a class="nav-link" href="{{ url_for('criterios') }}">
+                <i class="bi bi-list-check"></i>
+                Cadastro de Critérios
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('associar_criterios') }}">
+                <i class="bi bi-link-45deg"></i>
+                Cadastro de Associação de Critérios
+              </a>
             </li>
             <!-- ... -->
             {% elif session['role'] == 'Docente' %}

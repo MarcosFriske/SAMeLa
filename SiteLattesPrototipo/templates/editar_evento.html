@@ -3,58 +3,228 @@
 {% block title %}Editar Evento{% endblock %}
 
 {% block content %}
-    <div class="container-fluid">
-        <h2>Editar Evento</h2>
-        <form method="post" action="/editar_evento/{{ evento.id_evento }}">
-            <label for="identificacao">Identificação:</label><br>
-            <input type="text" id="identificacao" name="identificacao" value="{{ evento.identificacao }}" required><br>
 
-            <label for="tipo_evento">Tipo de Evento:</label><br>
-            <select id="tipo_evento" name="tipo_evento" required>
-                {% for tipo in tipos_evento %}
-                    <option value="{{ tipo }}" {% if evento.tipo_evento == tipo %} selected {% endif %}>{{ tipo }}</option>
-                {% endfor %}
-            </select><br>
+<div class="container mt-4">
 
-            <label for="data_inicio">Data de Início:</label><br>
-            <input type="date" id="data_inicio" name="data_inicio" value="{{ evento.data_inicio.strftime('%Y-%m-%d') }}" required><br>
+<h2 class="mb-4">Editar Evento</h2>
 
-            <label for="data_fim">Data de Fim:</label><br>
-            <input type="date" id="data_fim" name="data_fim" value="{{ evento.data_fim.strftime('%Y-%m-%d') }}" required><br>
+<form method="post" action="{{ url_for('editar_evento', evento_id=evento.id_evento) }}">
 
-            <label for="localizacao">Localização:</label><br>
-            <input type="text" id="localizacao" name="localizacao" value="{{ evento.localizacao }}" required><br>
+<div class="mb-3">
+<label class="form-label">Identificação</label>
+<input type="text"
+       class="form-control"
+       name="identificacao"
+       value="{{ evento.identificacao }}"
+       required>
+</div>
 
-            <label for="descricao">Descrição:</label><br>
-            <textarea id="descricao" name="descricao" required>{{ evento.descricao }}</textarea><br>
 
-            <label for="instrumento_avaliacao">Instrumento de Avaliação:</label><br>
-            <select id="instrumento_avaliacao" name="fk_id_instrumento_avaliacao">
-                <option value="">-- Nenhum --</option>
-                {% for instrumento in instrumentos %}
-                    <option value="{{ instrumento.id_instrumento_avaliacao }}"
-                        {% if evento.fk_id_instrumento_avaliacao == instrumento.id_instrumento_avaliacao %} selected {% endif %}>
-                        {{ instrumento.nome_instrumento }}
-                    </option>
-                {% endfor %}
-            </select><br>
+<div class="mb-3">
+<label class="form-label">Tipo de Evento</label>
 
-            {% if criterios %}
-                <label for="criterios">Critérios Associados:</label><br>
-                <ul>
-                    {% for criterio in criterios %}
-                        <li>
-                            <input type="checkbox" id="criterio_{{ criterio.id_criterio }}" name="criterios[]" value="{{ criterio.id_criterio }}"
-                                   {% if criterio.id_criterio in criterios_associados %} checked {% endif %}>
-                            <label for="criterio_{{ criterio.id_criterio }}">{{ criterio.criterio }}</label>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p><em>Nenhum critério disponível para o instrumento selecionado.</em></p>
-            {% endif %}
+<select class="form-select" name="tipo_evento" required>
 
-            <input type="submit" value="Atualizar Evento">
-        </form>
-    </div>
+{% for tipo in tipos_evento %}
+
+<option value="{{ tipo }}"
+{% if evento.tipo_evento == tipo %}selected{% endif %}>
+
+{{ tipo }}
+
+</option>
+
+{% endfor %}
+
+</select>
+</div>
+
+
+<div class="row">
+
+<div class="col-md-6 mb-3">
+
+<label class="form-label">Data de Início</label>
+
+<input type="date"
+       class="form-control"
+       name="data_inicio"
+       value="{{ evento.data_inicio.strftime('%Y-%m-%d') if evento.data_inicio }}">
+
+</div>
+
+<div class="col-md-6 mb-3">
+
+<label class="form-label">Data de Fim</label>
+
+<input type="date"
+       class="form-control"
+       name="data_fim"
+       value="{{ evento.data_fim.strftime('%Y-%m-%d') if evento.data_fim }}">
+
+</div>
+
+</div>
+
+
+<div class="mb-3">
+
+<label class="form-label">Localização</label>
+
+<input type="text"
+       class="form-control"
+       name="localizacao"
+       value="{{ evento.localizacao }}">
+
+</div>
+
+
+<div class="mb-3">
+
+<label class="form-label">Descrição</label>
+
+<textarea class="form-control"
+          rows="3"
+          name="descricao">{{ evento.descricao }}</textarea>
+
+</div>
+
+
+<div class="mb-4">
+
+<label class="form-label">Instrumento de Avaliação</label>
+
+<select class="form-select"
+        name="fk_id_instrumento_avaliacao"
+        id="instrumento_select">
+
+<option value="">-- Nenhum --</option>
+
+{% for instrumento in instrumentos %}
+
+<option value="{{ instrumento.id_instrumento_avaliacao }}"
+{% if evento.fk_id_instrumento_avaliacao == instrumento.id_instrumento_avaliacao %}selected{% endif %}>
+
+{{ instrumento.nome }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+
+<div class="card mt-4">
+
+<div class="card-header bg-light">
+Critérios do Instrumento Selecionado
+</div>
+
+<div class="card-body">
+
+<table class="table table-sm table-striped">
+
+<thead>
+<tr>
+<th>Critério</th>
+<th>Pontuação por Item</th>
+<th>Máx. Itens</th>
+</tr>
+</thead>
+
+<tbody id="criterios_tabela">
+
+{% for criterio in criterios %}
+
+<tr>
+<td>{{ criterio.criterio }}</td>
+<td>{{ criterio.pontuacao_item }}</td>
+<td>{{ criterio.qtd_maxima_itens }}</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+</div>
+
+
+<div class="mt-4">
+
+<button type="submit" class="btn btn-success">
+<i class="bi bi-check-circle"></i>
+Atualizar Evento
+</button>
+
+<a href="{{ url_for('eventos') }}" class="btn btn-secondary">
+<i class="bi bi-arrow-left"></i>
+Voltar
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    const selectInstrumento = document.getElementById("instrumento_select")
+    const tabela = document.getElementById("criterios_tabela")
+
+    selectInstrumento.addEventListener("change", function(){
+
+        const instrumentoId = this.value
+
+        tabela.innerHTML = ""
+
+        if(!instrumentoId){
+            return
+        }
+
+        fetch(`/api/criterios_por_instrumento/${instrumentoId}`)
+        .then(response => response.json())
+        .then(data => {
+
+            if(data.length === 0){
+
+                tabela.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-muted text-center">
+                        Nenhum critério encontrado para este instrumento.
+                    </td>
+                </tr>
+                `
+                return
+            }
+
+            data.forEach(c => {
+
+                const linha = `
+                <tr>
+                    <td>${c.criterio}</td>
+                    <td>${c.pontuacao_item}</td>
+                    <td>${c.qtd_maxima_itens}</td>
+                </tr>
+                `
+
+                tabela.insertAdjacentHTML("beforeend", linha)
+
+            })
+
+        })
+
+    })
+
+})
+
+</script>
+
 {% endblock %}

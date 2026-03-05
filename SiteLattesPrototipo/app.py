@@ -1,5 +1,5 @@
 #app.py
-from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response, send_file
+from flask import Flask, request, session, redirect, url_for, render_template, flash, make_response, send_file, jsonify
 from io import BytesIO
 from pathlib import Path
 import pandas as pd
@@ -782,11 +782,13 @@ def remover_evento(evento_id):
 
 @app.route('/editar_evento/<int:evento_id>', methods=['GET', 'POST'])
 def editar_evento(evento_id):
+
     if 'loggedin' not in session or session['role'] != 'Administrador':
         return redirect(url_for('login'))
 
     if request.method == 'POST':
         try:
+
             identificacao = request.form['identificacao']
             tipo_evento = request.form['tipo_evento']
             data_inicio = request.form['data_inicio']
@@ -797,19 +799,26 @@ def editar_evento(evento_id):
 
             with conn:
                 with conn.cursor() as cursor:
+
                     cursor.execute("""
                         UPDATE eventos 
-                        SET identificacao = %s, 
-                            tipo_evento = %s, 
-                            data_inicio = %s, 
-                            data_fim = %s, 
-                            localizacao = %s, 
+                        SET identificacao = %s,
+                            tipo_evento = %s,
+                            data_inicio = %s,
+                            data_fim = %s,
+                            localizacao = %s,
                             descricao = %s,
                             fk_id_instrumento_avaliacao = %s
                         WHERE id_evento = %s
                     """, (
-                        identificacao, tipo_evento, data_inicio, data_fim, 
-                        localizacao, descricao, id_instrumento_avaliacao, evento_id
+                        identificacao,
+                        tipo_evento,
+                        data_inicio,
+                        data_fim,
+                        localizacao,
+                        descricao,
+                        id_instrumento_avaliacao,
+                        evento_id
                     ))
 
             flash('Evento atualizado com sucesso!', 'success')
@@ -819,44 +828,84 @@ def editar_evento(evento_id):
             flash(f'Ocorreu um erro ao atualizar o evento: {str(e)}', 'danger')
 
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-        # Buscar dados do evento
-        cursor.execute("SELECT * FROM eventos WHERE id_evento = %s", (evento_id,))
+
+        # Buscar evento
+        cursor.execute("""
+            SELECT *
+            FROM eventos
+            WHERE id_evento = %s
+        """, (evento_id,))
         evento = cursor.fetchone()
 
-        # Buscar todos os instrumentos de avaliação
-        cursor.execute('SELECT id_instrumento_avaliacao, nome AS nome_instrumento FROM instrumentos_avaliacao ORDER BY nome')
+        # Buscar instrumentos
+        cursor.execute("""
+            SELECT id_instrumento_avaliacao, nome
+            FROM instrumentos_avaliacao
+            ORDER BY nome
+        """)
         instrumentos = cursor.fetchall()
 
-        # Buscar critérios associados ao instrumento vinculado ao evento
         criterios_disponiveis = []
-        if evento['fk_id_instrumento_avaliacao']:
+
+        # Buscar critérios do instrumento associado ao evento
+        if evento and evento['fk_id_instrumento_avaliacao']:
+
             cursor.execute("""
-                SELECT c.id_criterio, c.criterio
+                SELECT
+                    c.id_criterio,
+                    c.criterio,
+                    c.pontuacao_item,
+                    c.qtd_maxima_itens
                 FROM criterios c
-                JOIN rel_criterios_instrumentos rci ON c.id_criterio = rci.id_criterio
-                WHERE c.ativo = TRUE AND rci.id_instrumento_avaliacao = %s
+                JOIN rel_criterios_instrumentos rci
+                    ON rci.id_criterio = c.id_criterio
+                WHERE rci.id_instrumento_avaliacao = %s
+                AND c.ativo = TRUE
                 ORDER BY c.criterio
             """, (evento['fk_id_instrumento_avaliacao'],))
+
             criterios_disponiveis = cursor.fetchall()
 
-        # Buscar IDs dos critérios já associados ao evento (se isso estiver em outra tabela)
+        # Tipos de evento (ENUM)
         cursor.execute("""
-            SELECT id_criterio FROM criterios_evento WHERE id_evento = %s
-        """, (evento_id,))
-        criterios_associados_ids = [row[0] for row in cursor.fetchall()]
-
-        # Buscar os tipos de evento do ENUM
-        cursor.execute('SELECT unnest(enum_range(NULL::type_evento))')
-        tipos_evento = [item[0] for item in cursor.fetchall()]
+            SELECT unnest(enum_range(NULL::type_evento))
+        """)
+        tipos_evento = [row[0] for row in cursor.fetchall()]
 
     return render_template(
         'editar_evento.html',
         evento=evento,
         criterios=criterios_disponiveis,
-        criterios_associados=criterios_associados_ids,
         tipos_evento=tipos_evento,
         instrumentos=instrumentos
     )
+
+
+@app.route('/api/criterios_por_instrumento/<int:instrumento_id>')
+def api_criterios_por_instrumento(instrumento_id):
+
+    if 'loggedin' not in session:
+        return jsonify({"erro": "não autorizado"}), 403
+
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+
+        cursor.execute("""
+            SELECT
+                c.id_criterio,
+                c.criterio,
+                c.pontuacao_item,
+                c.qtd_maxima_itens
+            FROM criterios c
+            INNER JOIN rel_criterios_instrumentos rci
+                ON rci.id_criterio = c.id_criterio
+            WHERE rci.id_instrumento_avaliacao = %s
+            AND c.ativo = TRUE
+            ORDER BY c.criterio
+        """, (instrumento_id,))
+
+        criterios = cursor.fetchall()
+
+    return jsonify(criterios)
 
 
 
