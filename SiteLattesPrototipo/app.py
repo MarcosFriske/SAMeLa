@@ -1354,10 +1354,22 @@ def criterios():
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
 
-            return render_template(
+            tabela = render_template(
                 'tabela_criterios.html',
                 criterios=criterios
             )
+
+            paginacao = render_template(
+                'paginacao_criterios.html',
+                pagina=pagina,
+                total_paginas=total_paginas,
+                pesquisa=pesquisa
+            )
+
+            return {
+                "tabela": tabela,
+                "paginacao": paginacao
+            }
 
         return render_template(
             'criterios.html',

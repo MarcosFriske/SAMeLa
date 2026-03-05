@@ -19,7 +19,7 @@ onkeyup="searchCriterios()"
 >
 </div>
 
-<table class="table mt-3" style="table-layout: fixed; width:100%">
+<table class="table mt-3">
 
 <thead>
 <tr>
@@ -35,12 +35,16 @@ onkeyup="searchCriterios()"
 </thead>
 
 <tbody id="tabela-criterios">
-
 {% include 'tabela_criterios.html' %}
-
 </tbody>
 
 </table>
+
+<div id="paginacao">
+
+{% include 'paginacao_criterios.html' %}
+
+</div>
 
 <div class="mt-3 d-flex justify-content-around">
 <a href="/criar_criterio" class="btn btn-primary">
@@ -52,19 +56,20 @@ Adicionar Novo Critério
 
 <script>
 
-function searchCriterios(){
+function searchCriterios(pagina = 1){
 
 let pesquisa = document.getElementById('pesquisa').value
 
-fetch('/criterios?pesquisa=' + pesquisa,{
+fetch(`/criterios?pesquisa=${pesquisa}&pagina=${pagina}`,{
 headers:{
 'X-Requested-With':'XMLHttpRequest'
 }
 })
-.then(response => response.text())
+.then(response => response.json())
 .then(data =>{
 
-document.getElementById('tabela-criterios').innerHTML = data
+document.getElementById('tabela-criterios').innerHTML = data.tabela
+document.getElementById('paginacao').innerHTML = data.paginacao
 
 })
 
