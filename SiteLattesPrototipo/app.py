@@ -990,7 +990,7 @@ def inscrever_evento():
     
 @app.route('/detalhes_avaliacao/<int:avaliacao_id>', methods=['GET'])
 def detalhes_avaliacao(avaliacao_id):
-    if 'loggedin' in session and session['role'] == 'Docente':
+    if 'loggedin' not in session or session.get('role') not in ('Docente', 'Administrador'):
         cursor = conn.cursor()
 
         # Consultar dados da avaliação
@@ -1036,33 +1036,57 @@ def download_avaliacao(id_avaliacao, id_docente):
 
 @app.route('/download_avaliacao_pdf/<int:id_avaliacao>/<int:id_docente>')
 def download_avaliacao_pdf(id_avaliacao, id_docente):
-    if 'loggedin' not in session or session.get('role') != 'Docente':
+
+    if 'loggedin' not in session or session.get('role') not in ('Docente', 'Administrador'):
         flash('Acesso negado.', 'danger')
         return redirect(url_for('login'))
 
-    # --- 1. Buscar dados da avaliação ---
-    query = "SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = %s ORDER BY item ASC"
+    query = """
+        SELECT * 
+        FROM avaliacao_dados 
+        WHERE fk_id_avaliacao = %s 
+        ORDER BY item ASC
+    """
+
     df_avaliacao = pd.read_sql_query(query, conn, params=(id_avaliacao,))
+
     if df_avaliacao.empty:
         flash('Nenhum dado encontrado para esta avaliação.', 'warning')
-        return redirect(url_for('avaliacoes'))
 
-    # --- 2. Buscar informações do servidor e do evento ---
+        if session['role'] == 'Administrador':
+            return redirect(url_for('admin_avaliacoes'))
+        else:
+            return redirect(url_for('avaliacoes'))
+
     cursor = conn.cursor()
+
     cursor.execute("""
-        SELECT s.nome AS nome_docente, s.lattes_link,
-               e.identificacao AS nome_evento, e.data_inicio, e.data_fim,
-               i.nome AS instrumento_nome
+        SELECT 
+            s.nome AS nome_docente,
+            s.lattes_link,
+            e.identificacao AS nome_evento,
+            e.data_inicio,
+            e.data_fim,
+            i.nome AS instrumento_nome
         FROM avaliacao a
-        JOIN servidores s ON s.id_servidor = a.fk_id_servidor
-        JOIN eventos e ON e.id_evento = a.fk_id_evento
-        JOIN instrumentos_avaliacao i ON i.id_instrumento_avaliacao = e.fk_id_instrumento_avaliacao
+        JOIN servidores s
+            ON s.id_servidor = a.fk_id_servidor
+        JOIN eventos e
+            ON e.id_evento = a.fk_id_evento
+        JOIN instrumentos_avaliacao i
+            ON i.id_instrumento_avaliacao = e.fk_id_instrumento_avaliacao
         WHERE a.id_avaliacao = %s
     """, (id_avaliacao,))
+
     info = cursor.fetchone()
+
     if not info:
         flash('Erro ao localizar informações do evento/servidor.', 'danger')
-        return redirect(url_for('avaliacoes'))
+
+        if session['role'] == 'Administrador':
+            return redirect(url_for('admin_avaliacoes'))
+        else:
+            return redirect(url_for('avaliacoes'))
 
     dados_header = {
         "{{NOME_EDITAL}}": info[2] if info[2] else "Edital",
@@ -1072,8 +1096,8 @@ def download_avaliacao_pdf(id_avaliacao, id_docente):
         "{{DATA_FIM_EVENTO}}": info[4].strftime("%d/%m/%Y") if info[4] else "",
     }
 
-    # --- 3. Preparar lista de critérios ---
     criterios = []
+
     for _, row in df_avaliacao.iterrows():
         criterios.append({
             "NUMERO": int(row["item"]) + 1 if row["item"] is not None else 0,
@@ -1083,25 +1107,31 @@ def download_avaliacao_pdf(id_avaliacao, id_docente):
             "TOTAL_MAX": int(row["quantidade"]) if row["quantidade"] else 0,
         })
 
-    # --- 4. Gerar Excel e imagem ---
     tpl_path = Path("static/files/master_file.xlsx")
+
     pre = ExcelTemplatePreencher(tpl_path)
+
     pre.substituir_placeholders(dados_header)
     pre.preencher_criterios(criterios)
 
     img = pre.gerar_imagem_em_memoria()
+
     fragmentos = pre.gerar_fragmentos_a4(img)
 
     logo_path = Path("static/images/logo_estado.png")
+
     pdf_bytes = ExcelTemplatePreencher.gerar_pdf_em_memoria(fragmentos, logo_path)
 
-    # --- 5. Enviar PDF para download ---
+    # IMPORTANTE para arquivos em memória
+    pdf_bytes.seek(0)
+
     pdf_filename = f"avaliacao_{id_avaliacao}_{id_docente}.pdf"
+
     return send_file(
         pdf_bytes,
         mimetype="application/pdf",
-        attachment_filename=pdf_filename,
-        as_attachment=True
+        as_attachment=True,
+        attachment_filename=pdf_filename
     )
 
 
@@ -1499,40 +1529,158 @@ def instrumentos_criterios(instrumento_id):
     
 @app.route('/registrar_servidor', methods=['GET', 'POST'])
 def registrar_servidor():
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # Obtenha os tipos de servidor do banco de dados (type customizado)
-    cursor.execute("SELECT unnest(enum_range(NULL::type_servidor)) AS tipo_servidor")
-    tipos_servidor = [row['tipo_servidor'] for row in cursor.fetchall()]
+    # ==============================
+    # Buscar tipos de servidor
+    # ==============================
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+        cursor.execute("SELECT unnest(enum_range(NULL::type_servidor)) AS tipo_servidor")
+        tipos_servidor = [row['tipo_servidor'] for row in cursor.fetchall()]
 
     if request.method == 'POST':
-        # Obtenha os dados do formulário
-        fullname = request.form.get('fullname')
-        matricula = request.form.get('matricula')
-        password = request.form.get('password')
-        email = request.form.get('email')
+
+        fullname = request.form.get('fullname', '').strip()
+        matricula = request.form.get('matricula', '').strip()
+        password = request.form.get('password', '').strip()
+        email = request.form.get('email', '').strip().lower()
         tipo_servidor = request.form.get('tipo_servidor')
-        lattes_link = request.form.get('lattes_link')
+        lattes_link = request.form.get('lattes_link', '').strip()
 
-        # Validações para cada campo
+        # ==============================
+        # Validações
+        # ==============================
+
+        if not fullname:
+            flash('Nome é obrigatório.', 'warning')
+            return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+        if not re.match(r'^[0-9]+$', matricula):
+            flash('Matrícula deve conter apenas números.', 'warning')
+            return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
         if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            flash('Endereço de e-mail inválido!', 'warning')
-        elif not re.match(r'^[0-9]+$', matricula):
-            flash('Matrícula deve conter apenas números!', 'warning')
-        elif not re.match(r'^https://lattes.cnpq.br/\d{16}$', lattes_link):
-            flash('Lattes ID inválido!', 'warning')
-        else:
-            # Se todos os dados forem válidos, insira no banco de dados
-            _hashed_password = generate_password_hash(password)
-            cursor.execute(
-                "INSERT INTO servidores (nome, matricula, senha, e_mail, tipo_servidor, lattes_link) VALUES (%s, %s, %s, %s, %s, %s)",
-                (fullname.upper(), matricula, _hashed_password, email, tipo_servidor, lattes_link)
-            )
-            conn.commit()
-            flash('Servidor registrado com sucesso!', 'success')
-            return redirect(url_for('listar_servidores'))
+            flash('Endereço de e-mail inválido.', 'warning')
+            return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
 
-    return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+        if not re.match(r'^https://lattes.cnpq.br/\d{16}$', lattes_link):
+            flash('Link do Lattes inválido.', 'warning')
+            return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+        # ==============================
+        # Verificação prévia duplicidade
+        # ==============================
+
+        with conn.cursor() as cursor:
+
+            cursor.execute(
+                "SELECT 1 FROM servidores WHERE e_mail = %s",
+                (email,)
+            )
+            if cursor.fetchone():
+                flash('Este e-mail já está cadastrado.', 'warning')
+                return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+            cursor.execute(
+                "SELECT 1 FROM servidores WHERE matricula = %s",
+                (matricula,)
+            )
+            if cursor.fetchone():
+                flash('Esta matrícula já está cadastrada.', 'warning')
+                return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+        try:
+
+            # ==============================
+            # CASO 1 — SENHA INFORMADA
+            # ==============================
+            if password:
+
+                if len(password) < 6:
+                    flash('A senha deve possuir ao menos 6 caracteres.', 'warning')
+                    return render_template('registrar_servidor.html', tipos_servidor=tipos_servidor)
+
+                senha_hash = generate_password_hash(password)
+
+                with conn.cursor() as cursor:
+
+                    cursor.execute("""
+                        INSERT INTO servidores
+                        (nome, matricula, senha, e_mail, tipo_servidor, lattes_link)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        fullname.upper(),
+                        matricula,
+                        senha_hash,
+                        email,
+                        tipo_servidor,
+                        lattes_link
+                    ))
+
+                    conn.commit()
+
+                flash('Servidor administrativo registrado com sucesso.', 'success')
+                return redirect(url_for('listar_servidores'))
+
+            # ==============================
+            # CASO 2 — PRIMEIRO ACESSO (SEM SENHA)
+            # ==============================
+            else:
+
+                senha_temporaria = secrets.token_urlsafe(16)
+                senha_hash = generate_password_hash(senha_temporaria)
+
+                reset_token = secrets.token_urlsafe(32)
+
+                with conn.cursor() as cursor:
+
+                    cursor.execute("""
+                        INSERT INTO servidores
+                        (nome, matricula, senha, e_mail, tipo_servidor, lattes_link, reset_token)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        fullname.upper(),
+                        matricula,
+                        senha_hash,
+                        email,
+                        tipo_servidor,
+                        lattes_link,
+                        reset_token
+                    ))
+
+                    conn.commit()
+
+                # enviar e-mail
+                send_account_created_email(email, reset_token)
+
+                flash(
+                    f'Servidor cadastrado. Um e-mail foi enviado para {email} para definir a senha.',
+                    'success'
+                )
+
+                return redirect(url_for('listar_servidores'))
+
+        except psycopg2.errors.UniqueViolation as e:
+
+            conn.rollback()
+
+            if 'servidores_email_unique' in str(e):
+                flash('Este e-mail já está cadastrado.', 'warning')
+            elif 'servidores_matricula_unique' in str(e):
+                flash('Esta matrícula já está cadastrada.', 'warning')
+            else:
+                flash('Registro duplicado.', 'warning')
+
+        except Exception as e:
+
+            conn.rollback()
+            app.logger.exception(e)
+            flash('Erro interno ao registrar servidor.', 'danger')
+
+    return render_template(
+        'registrar_servidor.html',
+        tipos_servidor=tipos_servidor
+    )
+
 
 @app.route('/servidores', methods=['GET'])
 def listar_servidores():
@@ -1911,6 +2059,165 @@ def deletar_tipo_servidor():
 
     return redirect(url_for('tipos_servidor'))
 
+
+@app.route('/admin/avaliacoes')
+def admin_avaliacoes():
+
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
+        flash("Acesso negado.", "danger")
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT 
+            a.id_avaliacao,
+            s.nome,
+            e.identificacao,
+            e.data_inicio,
+            e.data_fim
+        FROM avaliacao a
+        JOIN servidores s ON s.id_servidor = a.fk_id_servidor
+        JOIN eventos e ON e.id_evento = a.fk_id_evento
+        ORDER BY a.id_avaliacao DESC
+    """)
+
+    avaliacoes = cursor.fetchall()
+
+    return render_template(
+        "admin_avaliacoes.html",
+        avaliacoes=avaliacoes
+    )
+
+@app.route('/admin/avaliacoes/<int:id_evento>')
+def admin_avaliacoes_evento(id_evento):
+
+    if 'loggedin' not in session or session['role'] != 'Administrador':
+        return redirect(url_for('login'))
+
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+
+        cursor.execute("""
+            SELECT
+                s.id_servidor,
+                s.nome,
+                s.matricula,
+                a.id_avaliacao,
+                a.pontuacao_total,
+                a.data_avaliacao
+            FROM avaliacao a
+            JOIN servidores s
+                ON s.id_servidor = a.fk_id_servidor
+            WHERE a.fk_id_evento = %s
+            ORDER BY s.nome
+        """, (id_evento,))
+
+        avaliacoes = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT nome_evento, ano_evento
+            FROM eventos
+            WHERE id_evento = %s
+        """, (id_evento,))
+
+        evento = cursor.fetchone()
+
+    return render_template(
+        'admin_avaliacoes_evento.html',
+        avaliacoes=avaliacoes,
+        evento=evento
+    )
+
+
+@app.route('/admin/detalhes_avaliacao/<int:avaliacao_id>')
+def admin_detalhes_avaliacao(avaliacao_id):
+
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
+        flash("Acesso negado.", "danger")
+        return redirect(url_for('login'))
+
+    cursor = conn.cursor()
+
+    # Dados detalhados da avaliação
+    cursor.execute("""
+        SELECT *
+        FROM avaliacao_dados
+        WHERE fk_id_avaliacao = %s
+        ORDER BY item ASC
+    """, (avaliacao_id,))
+
+    dados = cursor.fetchall()
+
+    # Buscar docente e ID do docente
+    cursor.execute("""
+        SELECT 
+            s.id_servidor,
+            s.nome
+        FROM avaliacao a
+        JOIN servidores s 
+            ON s.id_servidor = a.fk_id_servidor
+        WHERE a.id_avaliacao = %s
+    """, (avaliacao_id,))
+
+    docente_info = cursor.fetchone()
+
+    id_docente = None
+    nome_docente = "Docente"
+
+    if docente_info:
+        id_docente = docente_info[0]
+        nome_docente = docente_info[1]
+
+    cursor.close()
+
+    return render_template(
+        "admin_detalhes_avaliacao.html",
+        dados=dados,
+        avaliacao_id=avaliacao_id,
+        docente=nome_docente,
+        id_docente=id_docente
+    )
+
+@app.route('/admin/ranking_evento/<int:id_evento>')
+def admin_ranking_evento(id_evento):
+
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
+        flash("Acesso negado.", "danger")
+        return redirect(url_for('login'))
+
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+
+        cursor.execute("""
+            SELECT
+                s.id_servidor,
+                s.nome,
+                s.matricula,
+                a.id_avaliacao,
+                a.pontuacao_total,
+                RANK() OVER (ORDER BY a.pontuacao_total DESC) AS posicao
+            FROM avaliacao a
+            JOIN servidores s
+                ON s.id_servidor = a.fk_id_servidor
+            WHERE a.fk_id_evento = %s
+            ORDER BY posicao
+        """, (id_evento,))
+
+        ranking = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT identificacao, data_inicio, data_fim
+            FROM eventos
+            WHERE id_evento = %s
+        """, (id_evento,))
+
+        evento = cursor.fetchone()
+
+    return render_template(
+        "admin_ranking_evento.html",
+        ranking=ranking,
+        evento=evento,
+        id_evento=id_evento
+    )
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=5000, debug=True)

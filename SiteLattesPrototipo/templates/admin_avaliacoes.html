@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<h2>Avaliações do Sistema</h2>
+
+<table class="table table-striped mt-3">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Docente</th>
+<th>Edital</th>
+<th>Período</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for a in avaliacoes %}
+
+<tr>
+
+<td>{{ a[0] }}</td>
+
+<td>{{ a[1] }}</td>
+
+<td>{{ a[2] }}</td>
+
+<td>
+{{ a[3].strftime("%d/%m/%Y") if a[3] else "" }}
+-
+{{ a[4].strftime("%d/%m/%Y") if a[4] else "" }}
+</td>
+
+<td>
+
+<a href="{{ url_for('admin_detalhes_avaliacao', avaliacao_id=a[0]) }}"
+class="btn btn-sm btn-primary">
+Ver Avaliação
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

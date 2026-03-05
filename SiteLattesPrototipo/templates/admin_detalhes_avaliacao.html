@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<h2>Avaliação do Docente</h2>
+
+<p><strong>Docente:</strong> {{ docente }}</p>
+
+{% if not dados %}
+
+<div class="alert alert-warning">
+Nenhum dado encontrado para esta avaliação.
+</div>
+
+{% else %}
+
+<div class="alert alert-info mt-3">
+<strong>Pontuação Total:</strong>
+{{ dados | sum(attribute=7) }}
+</div>
+
+<table class="table table-hover mt-3">
+
+<thead>
+<tr>
+<th>Item</th>
+<th>Critério</th>
+<th>Pontos/Item</th>
+<th>Máximo</th>
+<th>Qtd</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for d in dados %}
+
+<tr>
+
+<td>{{ d[2] }}</td>
+
+<td>{{ d[3] }}</td>
+
+<td>{{ "%.2f"|format(d[4]) }}</td>
+
+<td>{{ d[5] }}</td>
+
+<td>{{ d[6] }}</td>
+
+<td class="fw-bold text-success">
+{{ "%.2f"|format(d[7]) }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+<div class="mt-4">
+
+<a href="{{ url_for('download_avaliacao_pdf',
+id_avaliacao=avaliacao_id,
+id_docente=id_docente) }}"
+class="btn btn-primary">
+
+<i class="bi bi-file-earmark-pdf"></i>
+Baixar PDF
+
+</a>
+
+</div>
+
+{% endif %}
+
+</div>
+
+{% endblock %}

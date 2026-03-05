@@ -29,7 +29,10 @@
         
         <div class="form-group">
             <label for="password">Senha:</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            <input type="password" class="form-control" id="password" name="password">
+            <small class="form-text text-muted">
+            Deixe em branco para que o usuário defina a senha por e-mail no primeiro acesso.
+            </small>
             <span id="passwordStatus"></span>
         </div>
         
@@ -92,7 +95,7 @@
         const emailValid = validateEmail(document.getElementById('email').value);
         const matriculaValid = validateMatricula(document.getElementById('matricula').value);
         const lattesValid = validateLattesLink(document.getElementById('lattes_link').value);
-        const passwordValid = document.getElementById('password').value.length > 0;
+        const passwordValid = true;
         
         document.getElementById('submitBtn').disabled = !(emailValid && matriculaValid && lattesValid && passwordValid);
     }
@@ -113,11 +116,6 @@
         validateField(this, validateLattesLink, 'lattesHint', 'lattesStatus');
     });
 
-    document.getElementById('password').addEventListener('blur', function() {
-        const isValid = this.value.length > 0;
-        toggleHintAndStatus(this, isValid, null, 'passwordStatus');
-        checkFormValidity();
-    });
 </script>
 
 {% endblock %}

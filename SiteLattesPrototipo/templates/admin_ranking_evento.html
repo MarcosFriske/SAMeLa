@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block title %}Ranking do Evento{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<h2 class="mb-4">
+Ranking do Evento: {{ evento.identificacao }}
+</h2>
+
+{% if ranking %}
+
+<table class="table table-striped table-hover">
+
+<thead class="table-dark">
+<tr>
+<th>Posição</th>
+<th>Servidor</th>
+<th>Matrícula</th>
+<th>Pontuação</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for r in ranking %}
+
+<tr>
+
+<td>
+
+{% if r.posicao == 1 %}
+🥇 {{ r.posicao }}
+{% elif r.posicao == 2 %}
+🥈 {{ r.posicao }}
+{% elif r.posicao == 3 %}
+🥉 {{ r.posicao }}
+{% else %}
+{{ r.posicao }}
+{% endif %}
+
+</td>
+
+<td>{{ r.nome }}</td>
+
+<td>{{ r.matricula }}</td>
+
+<td class="font-weight-bold text-success">
+{{ "%.2f"|format(r.pontuacao_total or 0) }}
+</td>
+
+<td>
+
+<a href="{{ url_for('admin_detalhes_avaliacao', avaliacao_id=r.id_avaliacao) }}"
+class="btn btn-sm btn-info">
+
+<i class="bi bi-search"></i>
+Ver Avaliação
+
+</a>
+
+<a href="{{ url_for('download_avaliacao_pdf', id_avaliacao=r.id_avaliacao, id_docente=r.id_servidor) }}"
+class="btn btn-sm btn-primary">
+
+<i class="bi bi-file-earmark-pdf"></i>
+PDF
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+{% else %}
+
+<div class="alert alert-warning">
+Nenhuma avaliação encontrada para este evento.
+</div>
+
+{% endif %}
+
+</div>
+
+{% endblock %}
