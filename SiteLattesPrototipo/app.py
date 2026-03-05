@@ -1519,7 +1519,7 @@ def registrar_servidor():
             flash('Endereço de e-mail inválido!', 'warning')
         elif not re.match(r'^[0-9]+$', matricula):
             flash('Matrícula deve conter apenas números!', 'warning')
-        elif not re.match(r'^http://lattes.cnpq.br/\d{16}$', lattes_link):
+        elif not re.match(r'^https://lattes.cnpq.br/\d{16}$', lattes_link):
             flash('Lattes ID inválido!', 'warning')
         else:
             # Se todos os dados forem válidos, insira no banco de dados
