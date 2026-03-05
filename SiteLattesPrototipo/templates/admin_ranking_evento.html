@@ -6,86 +6,93 @@
 
 <div class="container mt-4">
 
-<h2 class="mb-4">
-Ranking do Evento: {{ evento.identificacao }}
-</h2>
+    <h2 class="mb-4">
+        Ranking do Evento: {{ evento.identificacao }}
+    </h2>
 
-{% if ranking %}
+    {% if ranking and ranking|length > 0 %}
 
-<table class="table table-striped table-hover">
+    <div class="table-responsive">
 
-<thead class="table-dark">
-<tr>
-<th>Posição</th>
-<th>Servidor</th>
-<th>Matrícula</th>
-<th>Pontuação</th>
-<th>Ações</th>
-</tr>
-</thead>
+        <table class="table table-striped table-hover align-middle">
 
-<tbody>
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Posição</th>
+                    <th scope="col">Servidor</th>
+                    <th scope="col">Matrícula</th>
+                    <th scope="col" class="text-end">Pontuação</th>
+                    <th scope="col" class="text-center">Ações</th>
+                </tr>
+            </thead>
 
-{% for r in ranking %}
+            <tbody>
 
-<tr>
+                {% for r in ranking %}
 
-<td>
+                <tr>
 
-{% if r.posicao == 1 %}
-🥇 {{ r.posicao }}
-{% elif r.posicao == 2 %}
-🥈 {{ r.posicao }}
-{% elif r.posicao == 3 %}
-🥉 {{ r.posicao }}
-{% else %}
-{{ r.posicao }}
-{% endif %}
+                    <td>
 
-</td>
+                        {% if r.posicao == 1 %}
+                            🥇 {{ r.posicao }}
+                        {% elif r.posicao == 2 %}
+                            🥈 {{ r.posicao }}
+                        {% elif r.posicao == 3 %}
+                            🥉 {{ r.posicao }}
+                        {% else %}
+                            {{ r.posicao }}
+                        {% endif %}
 
-<td>{{ r.nome }}</td>
+                    </td>
 
-<td>{{ r.matricula }}</td>
+                    <td>{{ r.nome }}</td>
 
-<td class="font-weight-bold text-success">
-{{ "%.2f"|format(r.pontuacao_total or 0) }}
-</td>
+                    <td>{{ r.matricula }}</td>
 
-<td>
+                    <td class="fw-bold text-success text-end">
+                        {{ "%.2f"|format((r.pontuacao_total or 0)) }}
+                    </td>
 
-<a href="{{ url_for('admin_detalhes_avaliacao', avaliacao_id=r.id_avaliacao) }}"
-class="btn btn-sm btn-info">
+                    <td class="text-center">
 
-<i class="bi bi-search"></i>
-Ver Avaliação
+                        <a href="{{ url_for('admin_detalhes_avaliacao', avaliacao_id=r.id_avaliacao) }}"
+                           class="btn btn-sm btn-info">
 
-</a>
+                            <i class="bi bi-search"></i>
+                            Ver Avaliação
 
-<a href="{{ url_for('download_avaliacao_pdf', id_avaliacao=r.id_avaliacao, id_docente=r.id_servidor) }}"
-class="btn btn-sm btn-primary">
+                        </a>
 
-<i class="bi bi-file-earmark-pdf"></i>
-PDF
+                        <a href="{{ url_for('download_avaliacao_pdf',
+                                            id_avaliacao=r.id_avaliacao,
+                                            id_docente=r.id_servidor) }}"
+                           class="btn btn-sm btn-primary">
 
-</a>
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            PDF
 
-</td>
+                        </a>
 
-</tr>
+                    </td>
 
-{% endfor %}
+                </tr>
 
-</tbody>
-</table>
+                {% endfor %}
 
-{% else %}
+            </tbody>
 
-<div class="alert alert-warning">
-Nenhuma avaliação encontrada para este evento.
-</div>
+        </table>
 
-{% endif %}
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-warning">
+        Nenhuma avaliação encontrada para este evento.
+    </div>
+
+    {% endif %}
 
 </div>
 

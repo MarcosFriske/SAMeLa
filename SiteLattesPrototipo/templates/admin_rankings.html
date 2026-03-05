@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<h2>Rankings dos Eventos</h2>
+
+<table class="table table-striped mt-3">
+
+<thead>
+<tr>
+<th>Evento</th>
+<th>Período</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for e in eventos %}
+
+<tr>
+
+<td>{{ e.identificacao }}</td>
+
+<td>
+{{ e.data_inicio.strftime("%d/%m/%Y") }}
+-
+{{ e.data_fim.strftime("%d/%m/%Y") }}
+</td>
+
+<td>
+
+<a href="{{ url_for('admin_ranking_evento', id_evento=e.id_evento) }}"
+class="btn btn-success btn-sm">
+
+<i class="bi bi-trophy"></i>
+Ver Ranking
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}

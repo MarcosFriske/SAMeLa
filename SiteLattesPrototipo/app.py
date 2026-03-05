@@ -2178,6 +2178,33 @@ def admin_detalhes_avaliacao(avaliacao_id):
         id_docente=id_docente
     )
 
+
+@app.route('/admin/rankings')
+def admin_rankings():
+
+    if 'loggedin' not in session or session.get('role') != 'Administrador':
+        flash("Acesso negado.", "danger")
+        return redirect(url_for('login'))
+
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+
+        cursor.execute("""
+            SELECT
+                id_evento,
+                identificacao,
+                data_inicio,
+                data_fim
+            FROM eventos
+            ORDER BY data_inicio DESC
+        """)
+
+        eventos = cursor.fetchall()
+
+    return render_template(
+        "admin_rankings.html",
+        eventos=eventos
+    )
+
 @app.route('/admin/ranking_evento/<int:id_evento>')
 def admin_ranking_evento(id_evento):
 
@@ -2193,13 +2220,30 @@ def admin_ranking_evento(id_evento):
                 s.nome,
                 s.matricula,
                 a.id_avaliacao,
-                a.pontuacao_total,
-                RANK() OVER (ORDER BY a.pontuacao_total DESC) AS posicao
+
+                SUM(ad.pontuacao_atingida) AS pontuacao_total,
+
+                RANK() OVER (
+                    ORDER BY SUM(ad.pontuacao_atingida) DESC
+                ) AS posicao
+
             FROM avaliacao a
+
             JOIN servidores s
                 ON s.id_servidor = a.fk_id_servidor
+
+            JOIN avaliacao_dados ad
+                ON ad.fk_id_avaliacao = a.id_avaliacao
+
             WHERE a.fk_id_evento = %s
-            ORDER BY posicao
+
+            GROUP BY
+                s.id_servidor,
+                s.nome,
+                s.matricula,
+                a.id_avaliacao
+
+            ORDER BY pontuacao_total DESC
         """, (id_evento,))
 
         ranking = cursor.fetchall()
