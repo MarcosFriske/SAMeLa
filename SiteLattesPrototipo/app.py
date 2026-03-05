@@ -1039,36 +1039,40 @@ def inscrever_evento():
     
 @app.route('/detalhes_avaliacao/<int:avaliacao_id>', methods=['GET'])
 def detalhes_avaliacao(avaliacao_id):
+    # Permitir apenas Docente ou Administrador
     if 'loggedin' not in session or session.get('role') not in ('Docente', 'Administrador'):
-        cursor = conn.cursor()
+        return redirect(url_for('login'))
 
-        # Consultar dados da avaliação
-        cursor.execute(
-            'SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = %s',
-            (avaliacao_id,)
+    cursor = conn.cursor()
+
+    # Consultar dados da avaliação
+    cursor.execute(
+        'SELECT * FROM avaliacao_dados WHERE fk_id_avaliacao = %s',
+        (avaliacao_id,)
+    )
+    dados_avaliacao = cursor.fetchall()
+    print("Dados da Avaliação:", dados_avaliacao)  # Debug
+
+    # Consultar IDs do docente e do evento associados à avaliação
+    cursor.execute(
+        'SELECT fk_id_servidor, id_avaliacao FROM avaliacao WHERE id_avaliacao = %s',
+        (avaliacao_id,)
+    )
+    result = cursor.fetchone()
+
+    if result:
+        id_docente, id_avaliacao = result
+        print("ID do Docente:", id_docente)
+        print("ID do Avaliacao:", id_avaliacao)
+        return render_template(
+            'avaliacao_dados.html',
+            dados_avaliacao=dados_avaliacao,
+            id_avaliacao=id_avaliacao,
+            id_docente=id_docente
         )
-        dados_avaliacao = cursor.fetchall()
-        print("Dados da Avaliação:", dados_avaliacao)  # Adicione este print para debug
-
-        # Consultar IDs do docente e do evento associados à avaliação
-        cursor.execute(
-            'SELECT fk_id_servidor, id_avaliacao FROM avaliacao WHERE id_avaliacao = %s',
-            (avaliacao_id,)
-        )
-        result = cursor.fetchone()
-
-        # Verificar se o resultado não é nulo
-        if result:
-            id_docente, id_avaliacao = result
-            print("ID do Docente:", id_docente)  # Adicione este print para debug
-            print("ID do Avaliacao:", id_avaliacao)    # Adicione este print para debug
-            return render_template('avaliacao_dados.html', dados_avaliacao=dados_avaliacao, id_avaliacao=id_avaliacao, id_docente=id_docente)
-        else:
-            # Lidar com a situação em que os IDs não foram encontrados
-            flash('IDs do docente e/ou do evento não encontrados para a avaliação.')
-            return redirect(url_for('alguma_pagina_de_erro'))
-
-    return redirect(url_for('login'))
+    else:
+        flash('IDs do docente e/ou do evento não encontrados para a avaliação.')
+        return redirect(url_for('alguma_pagina_de_erro'))
 
 @app.route('/download_avaliacao/<int:id_avaliacao>/<int:id_docente>')
 def download_avaliacao(id_avaliacao, id_docente):
