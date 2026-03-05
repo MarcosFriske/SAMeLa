@@ -42,8 +42,8 @@
         
         <div class="form-group">
             <label for="lattes_link">Link do Lattes:</label>
-            <input type="url" class="form-control" id="lattes_link" name="lattes_link" required placeholder="http://lattes.cnpq.br/1234567890123456">
-            <span id="lattesHint" class="hint text-warning d-none">Formato: http://lattes.cnpq.br/ seguido de 16 dígitos.</span>
+            <input type="url" class="form-control" id="lattes_link" name="lattes_link" required placeholder="https://lattes.cnpq.br/1234567890123456">
+            <span id="lattesHint" class="hint text-warning d-none">Formato: https://lattes.cnpq.br/ seguido de 16 dígitos.</span>
             <span id="lattesStatus"></span>
         </div>
         
@@ -63,7 +63,7 @@
     }
 
     function validateLattesLink(link) {
-        const lattesRegex = /^http:\/\/lattes.cnpq.br\/\d{16}$/;
+        const lattesRegex = /^https:\/\/lattes.cnpq.br\/\d{16}$/;
         return lattesRegex.test(link);
     }
 

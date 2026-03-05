@@ -23,7 +23,13 @@
 
             <div class="form-group">
                 <label for="xpath_criterio_lattes">XPath do Critério:</label>
-                <input type="text" id="xpath_criterio_lattes" name="xpath_criterio_lattes" class="form-control" value="{{ criterio.xpath_criterio_lattes }}" required>
+                <textarea
+                    id="xpath_criterio_lattes"
+                    name="xpath_criterio_lattes"
+                    class="form-control xpath-editor"
+                    rows="6"
+                    required
+                >{{ criterio.xpath_criterio_lattes }}</textarea>
             </div>
 
             <div class="form-group">
@@ -40,3 +46,31 @@
         </form>
     </div>
 {% endblock %}
+
+<style>
+.xpath-editor {
+    font-family: monospace;
+    font-size: 14px;
+    white-space: pre;
+    resize: vertical;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const textarea = document.getElementById("xpath_criterio_lattes");
+
+    textarea.addEventListener("keydown", function(e) {
+        if (e.key === "Tab") {
+            e.preventDefault();
+
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+});
+</script>
